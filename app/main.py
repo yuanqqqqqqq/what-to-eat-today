@@ -2,6 +2,8 @@
 """三餐 Agent 后端入口（FastAPI）"""
 from pathlib import Path
 
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,14 +24,14 @@ class RecommendRequest(BaseModel):
     taboos: list = []
     allergies: list = []
     taste_prefs: list = []
-    budget: float = None
-    time_budget: int = None
+    budget: Optional[float] = None
+    time_budget: Optional[int] = None
     devices: list = []
-    max_difficulty: int = None
+    max_difficulty: Optional[int] = None
     must_include: list = []
     pantry: list = []
-    nutrition_goal: str = None
-    seed: int = None
+    nutrition_goal: Optional[str] = None
+    seed: Optional[int] = None
 
 
 class SettingsRequest(BaseModel):
