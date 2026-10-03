@@ -1,0 +1,16 @@
+# 忽略用户私有数据与环境
+.env
+data/settings.json
+data/raw/
+data/raw/*.tar.gz
+data/raw/*.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 系统
+.DS_Store
+*.log

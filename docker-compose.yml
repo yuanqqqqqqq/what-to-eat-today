@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    container_name: san-can-agent
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data   # 持久化菜谱与用户设置
+    env_file:
+      - .env               # 可选：不提供 .env 也可在前端面板填写 Key
+    restart: unless-stopped

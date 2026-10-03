@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今天吃什么 · 家庭餐桌助手</title>
+<style>
+:root {
+  --bg: #faf6f0;
+  --card: #ffffff;
+  --ink: #2d2a26;
+  --sub: #8a8178;
+  --accent: #e07a3f;
+  --accent2: #5a8f5a;
+  --line: #ece4da;
+  --radius: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.6;
+  padding: 24px 16px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 28px; }
+header h1 { font-size: 26px; letter-spacing: 1px; }
+header p { color: var(--sub); font-size: 14px; margin-top: 4px; }
+.grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+.card + .card { margin-top: 16px; }
+.card h2 { font-size: 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+label { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 4px; }
+input[type=number], input[type=text], select {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+  font-size: 14px; background: #fff; color: var(--ink);
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 6px 14px; border: 1px solid var(--line); border-radius: 20px;
+  font-size: 13px; cursor: pointer; user-select: none; background: #fff; transition: all .15s;
+}
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn {
+  display: block; width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; transition: opacity .15s;
+}
+.btn:hover { opacity: .9; }
+.btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
+.menu-item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.menu-item h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f3ede4; color: var(--sub); }
+.tag.meat { background: #fbe4e0; color: #c04a3a; }
+.tag.veg { background: #e3f0e3; color: var(--accent2); }
+.tag.soup { background: #e0eef5; color: #3a7ca0; }
+.tag.spicy { background: #fbe0e0; color: #c0392b; }
+.tag.mild { background: #fdeed9; color: #d97a1f; }
+.tag.plain { background: #e3f0e3; color: #4a8f4a; }
+.menu-item .meta { font-size: 12px; color: var(--sub); margin-top: 6px; }
+.pairing { background: #fdf6ec; border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+.zone { margin-bottom: 12px; }
+.zone h4 { font-size: 13px; color: var(--accent2); margin-bottom: 6px; }
+.zone ul { list-style: none; }
+.zone li { font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.zone li .amt { color: var(--sub); font-size: 12px; }
+.nutri { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.nutri .k { color: var(--sub); }
+.nutri .v { font-weight: 600; }
+.tips { font-size: 13px; color: #b05a2a; margin-top: 8px; }
+.steps-group { margin-bottom: 12px; }
+.steps-group h4 { font-size: 14px; margin: 8px 0 4px; color: #6a5f52; }
+.steps ol { padding-left: 20px; font-size: 13px; }
+.steps li { margin: 3px 0; }
+.steps .sub { list-style: disc; color: var(--sub); font-size: 12px; margin-left: 4px; }
+.hidden { display: none; }
+#error { color: #c04a3a; font-size: 13px; margin-top: 10px; }
+.settings-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.settings-row input { flex: 1; }
+.settings-row button { white-space: nowrap; }
+.setting-hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
+details { margin-top: 8px; }
+summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+.spin { text-align: center; color: var(--sub); padding: 30px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🍳 今天吃什么</h1>
+    <p>从"不知道吃什么"到"菜端上桌"，约束内随机，帮你一次搞定</p>
+  </header>
+
+  <div class="grid">
+    <!-- 左：输入表单 -->
+    <div class="card">
+      <h2>今天怎么吃？</h2>
+      <div class="row2">
+        <div><label>人数</label><input type="number" id="people" value="3" min="1" max="20"></div>
+        <div><label>几菜几汤</label>
+          <div class="row2">
+            <div><label style="font-size:12px">菜</label><input type="number" id="dishes" value="2" min="0" max="10"></div>
+            <div><label style="font-size:12px">汤</label><input type="number" id="soups" value="1" min="0" max="5"></div>
+          </div>
+        </div>
+      </div>
+
+      <label>忌口（硬约束）</label>
+      <div class="chips" id="taboos"></div>
+
+      <label>过敏（硬约束）</label>
+      <div class="chips" id="allergies"></div>
+
+      <label>口味偏好（软约束）</label>
+      <div class="chips" id="tastes"></div>
+
+      <div class="row2">
+        <div><label>预算（元，可选）</label><input type="number" id="budget" placeholder="如 60"></div>
+        <div><label>时间预算（分钟，可选）</label>
+          <select id="time_budget"><option value="">不限</option><option>20</option><option selected>30</option><option>60</option><option>90</option></select>
+        </div>
+      </div>
+
+      <label>厨房设备</label>
+      <div class="chips" id="devices"></div>
+
+      <label>难度上限（可选）</label>
+      <select id="max_difficulty"><option value="">不限</option><option value="1">★ 极简</option><option value="2">★★ 简单</option><option value="3">★★★ 中等</option><option value="4">★★★★ 挑战</option><option value="5">★★★★★ 硬核</option></select>
+
+      <label>家里现有食材（逗号分隔，优先消耗）</label>
+      <input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿">
+
+      <label>营养目标</label>
+      <select id="nutrition_goal"><option value="">无</option><option>均衡</option><option>减脂</option><option>增肌</option><option>控糖</option></select>
+
+      <button class="btn" id="go">🍽 给我推荐</button>
+      <button class="btn secondary" id="reshuffle">🎲 换一批（约束内随机）</button>
+      <div id="error"></div>
+
+      <details>
+        <summary>⚙️ LLM 设置（BYOK，自带 Key）</summary>
+        <label>Base URL（填到 /v1）</label>
+        <input type="text" id="base_url" placeholder="https://api.deepseek.com/v1">
+        <label>API Key</label>
+        <input type="text" id="api_key" placeholder="sk-...">
+        <label>模型名</label>
+        <input type="text" id="model" placeholder="deepseek-chat">
+        <div class="settings-row">
+          <button class="btn secondary" id="save_llm" style="margin-top:12px">保存</button>
+          <button class="btn secondary" id="test_llm" style="margin-top:12px">测试连接</button>
+        </div>
+        <div class="setting-hint">支持 DeepSeek / GLM / Qwen / Moonshot / Ollama 等所有 OpenAI 兼容接口。Key 只存本地后端，不上传。</div>
+      </details>
+    </div>
+
+    <!-- 右：结果 -->
+    <div>
+      <div id="result" class="card hidden">
+        <h2>今日餐桌方案</h2>
+        <div class="pairing" id="pairing"></div>
+        <div id="menu"></div>
+        <h2 style="margin-top:20px">🧺 合并采购清单 <span style="font-size:12px;color:var(--sub)" id="cost"></span></h2>
+        <div id="shopping"></div>
+        <h2 style="margin-top:20px">🥗 营养分析（粗略）</h2>
+        <div id="nutrition"></div>
+        <h2 style="margin-top:20px">👨‍🍳 分步做法</h2>
+        <div id="steps"></div>
+      </div>
+      <div id="loading" class="card spin hidden">正在为你搭配…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let META = null;
+const $ = id => document.getElementById(id);
+
+async function loadMeta() {
+  const r = await fetch('/api/meta');
+  META = await r.json();
+  renderChips('taboos', META.taboos);
+  renderChips('allergies', META.allergies);
+  renderChips('tastes', META.tastes);
+  renderChips('devices', META.devices);
+  // 加载已保存的 LLM 配置
+  const s = await (await fetch('/api/settings')).json();
+  $('base_url').value = s.base_url || '';
+  $('api_key').value = s.api_key || '';
+  $('model').value = s.model || '';
+}
+
+function renderChips(id, items) {
+  const el = $(id);
+  el.innerHTML = '';
+  items.forEach(it => {
+    const c = document.createElement('span');
+    c.className = 'chip';
+    c.textContent = it;
+    c.onclick = () => c.classList.toggle('on');
+    el.appendChild(c);
+  });
+}
+
+function getChips(id) {
+  return [...$(id).querySelectorAll('.chip.on')].map(c => c.textContent);
+}
+
+function buildReq() {
+  return {
+    people: +$('people').value || 1,
+    dishes: +$('dishes').value || 0,
+    soups: +$('soups').value || 0,
+    taboos: getChips('taboos'),
+    allergies: getChips('allergies'),
+    taste_prefs: getChips('tastes'),
+    budget: $('budget').value ? +$('budget').value : null,
+    time_budget: $('time_budget').value ? +$('time_budget').value : null,
+    devices: getChips('devices'),
+    max_difficulty: $('max_difficulty').value ? +$('max_difficulty').value : null,
+    pantry: $('pantry').value.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
+    nutrition_goal: $('nutrition_goal').value || null,
+    seed: null,
+  };
+}
+
+async function recommend(seed) {
+  $('error').textContent = '';
+  $('loading').classList.remove('hidden');
+  $('result').classList.add('hidden');
+  const req = buildReq();
+  req.seed = seed;
+  try {
+    const r = await fetch('/api/recommend', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(req)
+    });
+    const data = await r.json();
+    if (!data.ok) { $('error').textContent = data.error || '无结果'; return; }
+    render(data);
+  } catch (e) {
+    $('error').textContent = '请求失败: ' + e.message;
+  } finally {
+    $('loading').classList.add('hidden');
+    $('result').classList.remove('hidden');
+  }
+}
+
+function typeClass(t) {
+  if (t === '荤') return 'meat';
+  if (t === '素') return 'veg';
+  if (t === '汤') return 'soup';
+  return '';
+}
+
+function spiceClass(s) {
+  if (s === '辣') return 'spicy';
+  if (s === '微辣') return 'mild';
+  return 'plain';
+}
+
+function render(d) {
+  $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
+  $('menu').innerHTML = d.menu.map(r => `
+    <div class="menu-item">
+      <h3>${r.name}
+        <span class="tag ${typeClass(r.dish_type)}">${r.dish_type||''}</span>
+        ${r.spiciness ? `<span class="tag ${spiceClass(r.spiciness)}">${r.spiciness}</span>` : ''}
+      </h3>
+      <div class="meta">${(r.taste||[]).join('/')} · 时令${r.season||'四季'} · 难度 ${'★'.repeat(r.difficulty||0)} · ${r.estimated_minutes ? r.estimated_minutes+' 分钟' : '耗时未知'} · ${r.calories_kcal} 大卡</div>
+    </div>`).join('');
+
+  $('cost').textContent = `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`;
+  $('shopping').innerHTML = d.shopping.zones.map(z => `
+    <div class="zone"><h4>${z.zone}区</h4><ul>
+      ${z.items.map(it => `<li>${it.name}${it.optional?' <span class="amt">(可选)</span>':''} <span class="amt">${it.amount ? '· '+it.amount : ''} ${it.used_by.length>1 ? '· 共'+it.used_by.length+'道菜用' : ''}</span></li>`).join('')}
+    </ul></div>`).join('');
+
+  const n = d.nutrition;
+  $('nutrition').innerHTML = `
+    <div class="nutri">
+      <span><span class="k">总热量</span> <span class="v">${n.total_kcal}</span> 大卡</span>
+      <span><span class="k">人均</span> <span class="v">${n.per_person_kcal}</span> 大卡</span>
+      <span><span class="k">荤/素/汤</span> <span class="v">${n.meat_count}/${n.veg_count}/${n.soup_count}</span></span>
+      <span><span class="k">蛋白:脂:碳</span> <span class="v">${n.protein_kcal}:${n.fat_kcal}:${n.carb_kcal}</span> 大卡</span>
+    </div>
+    ${n.tips.map(t => `<div class="tips">💡 ${t}</div>`).join('')}`;
+
+  $('steps').innerHTML = d.menu.map(r => `
+    <div class="menu-item">
+      <h3>${r.name}</h3>
+      ${(r.steps||[]).map(g => `
+        <div class="steps-group">
+          ${g.group ? `<h4>${g.group}</h4>` : ''}
+          <ol>${g.steps.map(s => `<li>${s.text}${s.sub.length ? '<ul class="sub">'+s.sub.map(x=>`<li>${x}</li>`).join('')+'</ul>' : ''}</li>`).join('')}</ol>
+        </div>`).join('')}
+      ${(r.tips||[]).length ? `<div class="tips">💡 ${r.tips.join('；')}</div>` : ''}
+    </div>`).join('');
+}
+
+$('go').onclick = () => recommend(Math.floor(Math.random()*1e9));
+$('reshuffle').onclick = () => recommend(Math.floor(Math.random()*1e9));
+$('save_llm').onclick = async () => {
+  const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
+  await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  alert('已保存');
+};
+$('test_llm').onclick = async () => {
+  const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
+  const r = await (await fetch('/api/llm/test', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();
+  alert(r.ok ? '✅ ' + r.message : '❌ ' + r.message);
+};
+
+loadMeta();
+</script>
+</body>
+</html>
