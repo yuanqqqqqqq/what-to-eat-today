@@ -3,255 +3,399 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>今天吃什么 · 家庭餐桌助手</title>
+<title>今天吃什么</title>
 <style>
-:root {
-  --bg: #faf6f0;
-  --card: #ffffff;
-  --ink: #2d2a26;
-  --sub: #8a8178;
-  --accent: #e07a3f;
-  --accent2: #5a8f5a;
-  --line: #ece4da;
-  --radius: 14px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: var(--bg); color: var(--ink); line-height: 1.6;
-  padding: 24px 16px;
-}
-.wrap { max-width: 1080px; margin: 0 auto; }
-header { text-align: center; margin-bottom: 28px; }
-header h1 { font-size: 26px; letter-spacing: 1px; }
-header p { color: var(--sub); font-size: 14px; margin-top: 4px; }
-.grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
-@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
-.card + .card { margin-top: 16px; }
-.card h2 { font-size: 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-label { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 4px; }
-input[type=number], input[type=text], select {
-  width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
-  font-size: 14px; background: #fff; color: var(--ink);
-}
-input:focus, select:focus { outline: none; border-color: var(--accent); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  padding: 6px 14px; border: 1px solid var(--line); border-radius: 20px;
-  font-size: 13px; cursor: pointer; user-select: none; background: #fff; transition: all .15s;
-}
-.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.btn {
-  display: block; width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 10px;
-  background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; transition: opacity .15s;
-}
-.btn:hover { opacity: .9; }
-.btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
-.chk-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); margin: 12px 0 0; cursor: pointer; }
-.chk-row input { width: auto; }
-.scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
-.scene-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .15s; background: #fff; }
-.scene-card:hover { border-color: var(--accent); }
-.scene-card.on { border-color: var(--accent); background: #fdf6ec; }
-.scene-card .s-name { font-size: 14px; font-weight: 600; }
-.scene-card .s-desc { font-size: 12px; color: var(--sub); margin-top: 2px; }
-.trace-line { font-size: 12px; color: var(--sub); padding: 3px 0; border-bottom: 1px dashed var(--line); }
-.trace-line b { color: var(--accent); }
-/* 模式切换 */
-.seg { display: flex; background: #f3ede4; border-radius: 10px; padding: 4px; margin-bottom: 4px; }
-.seg button { flex: 1; padding: 8px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; color: var(--sub); }
-.seg button.on { background: #fff; color: var(--accent); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-.menu-item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-.menu-item h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f3ede4; color: var(--sub); }
-.tag.meat { background: #fbe4e0; color: #c04a3a; }
-.tag.veg { background: #e3f0e3; color: var(--accent2); }
-.tag.soup { background: #e0eef5; color: #3a7ca0; }
-.tag.spicy { background: #fbe0e0; color: #c0392b; }
-.tag.mild { background: #fdeed9; color: #d97a1f; }
-.tag.plain { background: #e3f0e3; color: #4a8f4a; }
-.menu-item .meta { font-size: 12px; color: var(--sub); margin-top: 6px; }
-.item-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-.item-actions button { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--sub); transition: all .15s; }
-.item-actions button:hover { border-color: var(--accent); color: var(--accent); }
-.item-actions button.fb.done { background: #f3ede4; border-color: var(--accent); }
-.pairing { background: #fdf6ec; border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
-.zone { margin-bottom: 12px; }
-.zone h4 { font-size: 13px; color: var(--accent2); margin-bottom: 6px; }
-.zone ul { list-style: none; }
-.zone li { font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
-.zone li .amt { color: var(--sub); font-size: 12px; }
-.nutri { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
-.nutri .k { color: var(--sub); }
-.nutri .v { font-weight: 600; }
-.tips { font-size: 13px; color: #b05a2a; margin-top: 8px; }
-.steps-group { margin-bottom: 12px; }
-.steps-group h4 { font-size: 14px; margin: 8px 0 4px; color: #6a5f52; }
-.steps ol { padding-left: 20px; font-size: 13px; }
-.steps li { margin: 3px 0; }
-.steps .sub { list-style: disc; color: var(--sub); font-size: 12px; margin-left: 4px; }
-.hidden { display: none; }
-#error { color: #c04a3a; font-size: 13px; margin-top: 10px; }
-.settings-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.settings-row input { flex: 1; }
-.settings-row button { white-space: nowrap; }
-.setting-hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
-details { margin-top: 8px; }
-summary { cursor: pointer; color: var(--accent); font-size: 13px; }
-.spin { text-align: center; color: var(--sub); padding: 30px; font-size: 14px; }
-/* 周计划 */
-.day-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-.day-card h3 { font-size: 15px; color: var(--accent); margin-bottom: 8px; }
-.day-card .day-menu { display: flex; flex-wrap: wrap; gap: 8px; }
-.day-chip { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
-.day-chip:hover { border-color: var(--accent); }
-.week-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; margin-bottom: 16px; color: var(--sub); }
-.week-summary b { color: var(--ink); }
-/* 画像 / 再利用 */
-.profile-block { font-size: 13px; }
-.profile-block .pf-line { margin: 6px 0; }
-.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.pf-chip { font-size: 12px; padding: 3px 10px; border-radius: 12px; background: #f3ede4; }
-.pf-chip.avoid { background: #fbe4e0; color: #c04a3a; }
-.reuse-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-.reuse-item h4 { font-size: 14px; color: var(--accent); }
-.reuse-item .how { font-size: 13px; color: var(--sub); margin-top: 4px; }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2d2a26; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 99; }
-#toast.show { opacity: 1; }
+  :root {
+    --bg: #FAFAF7;
+    --card: #FFFFFF;
+    --soft: #F4F3EF;
+    --hover: #EFEEE9;
+    --entry-bg: #FFFBF5;
+
+    --t1: #1F1E1B;
+    --t2: #6B6862;
+    --t3: #9B978F;
+
+    --line: #EDEBE5;
+    --line2: #E2DFD8;
+
+    --accent: #C8622B;
+    --accent-soft: #FBF0E9;
+    --accent-hover: #B5561F;
+
+    --r-lg: 16px;
+    --r-md: 10px;
+    --r-sm: 6px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--t1);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 32px 80px; }
+  @media (max-width: 700px) { .page { padding: 24px 16px 48px; } }
+
+  /* ========== 顶栏 ========== */
+  .topbar { margin-bottom: 28px; }
+  .topbar h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .topbar p { font-size: 13px; color: var(--t2); margin-top: 2px; }
+
+  /* ========== 入口面板 ========== */
+  .entry-panel {
+    background: var(--entry-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .entry-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .entry-head h2 { font-size: 18px; font-weight: 600; color: var(--t1); }
+  .advanced-toggle {
+    background: transparent; border: none; font-size: 13px; color: var(--t2);
+    cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); transition: all 0.15s;
+  }
+  .advanced-toggle:hover { color: var(--accent); background: var(--accent-soft); }
+  .advanced-toggle .arrow { display: inline-block; transition: transform 0.2s; font-size: 10px; margin-left: 2px; }
+  .advanced-toggle.open .arrow { transform: rotate(180deg); }
+
+  .entry-body { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+
+  .scene-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .scene-pill {
+    padding: 8px 16px; background: var(--card); border: 1px solid var(--line2);
+    border-radius: 24px; font-size: 13px; font-weight: 500; color: var(--t1);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .scene-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .scene-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .entry-controls { margin-left: auto; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .counter { display: flex; align-items: center; gap: 8px; }
+  .counter-label { font-size: 13px; color: var(--t2); font-weight: 500; }
+  .counter-ctrl { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line2); border-radius: var(--r-sm); overflow: hidden; }
+  .counter-ctrl button {
+    width: 28px; height: 30px; background: transparent; border: none; cursor: pointer;
+    font-size: 14px; color: var(--t2); transition: background 0.15s;
+  }
+  .counter-ctrl button:hover { background: var(--soft); color: var(--t1); }
+  .counter-ctrl input {
+    width: 32px; height: 30px; text-align: center; border: none; background: transparent;
+    font-size: 14px; font-weight: 600; color: var(--t1); outline: none;
+  }
+
+  .btn-generate {
+    padding: 10px 22px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--r-sm); font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-generate:hover { background: var(--accent-hover); }
+  .btn-generate:disabled { opacity: 0.6; cursor: default; }
+
+  /* 场景提示 */
+  .scene-hint { margin-top: 14px; font-size: 12px; color: var(--t2); min-height: 18px; }
+  .scene-hint b { color: var(--accent); font-weight: 600; }
+
+  /* 高级配置 */
+  .advanced-panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); display: none; }
+  .advanced-panel.open { display: block; }
+  .adv-group { margin-bottom: 16px; }
+  .adv-group:last-child { margin-bottom: 0; }
+  .adv-label { display: block; font-size: 12px; font-weight: 500; color: var(--t2); margin-bottom: 8px; letter-spacing: 0.02em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 12px; font-size: 12px; color: var(--t2); background: var(--soft);
+    border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer; transition: all 0.12s;
+  }
+  .chip:hover { background: var(--hover); color: var(--t1); }
+  .chip.selected { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 500; }
+
+  .adv-row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 120px; }
+  .field label { display: block; font-size: 12px; color: var(--t2); margin-bottom: 6px; font-weight: 500; }
+  .field input, .field select {
+    width: 100%; padding: 7px 10px; font-size: 13px; color: var(--t1);
+    border: 1px solid var(--line2); border-radius: var(--r-sm); background: var(--card); outline: none; transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t2); cursor: pointer; }
+  .check-row input { accent-color: var(--accent); }
+
+  /* ========== 主体双栏 ========== */
+  .main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
+  @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .main-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px 28px; }
+
+  .view-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .view-tab {
+    padding: 10px 4px; margin-right: 20px; background: transparent; border: none;
+    font-size: 14px; color: var(--t2); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.15s; font-weight: 500;
+  }
+  .view-tab:hover { color: var(--t1); }
+  .view-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .disclosure {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--t2);
+    cursor: pointer; padding: 6px 0; background: transparent; border: none; margin-bottom: 16px;
+  }
+  .disclosure:hover { color: var(--accent); }
+  .disclosure .arrow { font-size: 9px; transition: transform 0.2s; }
+  .disclosure.open .arrow { transform: rotate(90deg); }
+  .disclose-body { display: none; margin-bottom: 20px; }
+  .disclose-body.open { display: block; }
+
+  .plan-summary {
+    padding: 16px 20px; background: var(--entry-bg); border-radius: var(--r-md);
+    font-size: 14px; line-height: 1.75; color: var(--t1); margin-bottom: 20px; border-left: 3px solid var(--accent);
+  }
+  .summary-meta { font-size: 12px; color: var(--t2); margin-top: 8px; }
+  .summary-meta b { color: var(--t1); font-weight: 600; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--t3); font-size: 14px; }
+  .empty-state .big { font-size: 40px; margin-bottom: 12px; }
+
+  /* 菜品网格 */
+  .dish-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .dish-grid { grid-template-columns: 1fr; } }
+  .dish-card {
+    display: flex; flex-direction: column; padding: 16px; background: var(--card);
+    border: 1px solid var(--line); border-radius: var(--r-md); transition: all 0.15s;
+  }
+  .dish-card:hover { border-color: var(--line2); box-shadow: 0 4px 12px rgba(31,30,27,0.06); transform: translateY(-1px); }
+  .dish-name { font-size: 15px; font-weight: 600; color: var(--t1); margin-bottom: 6px; }
+  .dish-tags { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: var(--r-sm); background: var(--soft); color: var(--t2); font-weight: 500; }
+  .tag.accent { background: var(--accent-soft); color: var(--accent); }
+  .tag.veg { background: #EDF3EB; color: #5A7F54; }
+  .tag.soup { background: #EBF1F5; color: #4A6E85; }
+  .dish-meta { font-size: 12px; color: var(--t2); line-height: 1.7; margin-bottom: 14px; flex: 1; }
+  .dish-meta .star { color: var(--accent); }
+  .dish-actions { display: flex; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .action-btn {
+    flex: 1; padding: 6px 8px; font-size: 11px; color: var(--t2); background: transparent;
+    border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .action-btn.done { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+
+  /* 周计划 */
+  .week-summary { padding: 16px 20px; background: var(--entry-bg); border-radius: var(--r-md); margin-bottom: 16px; font-size: 13px; color: var(--t2); line-height: 1.8; }
+  .week-summary b { color: var(--t1); font-weight: 600; }
+  .day-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px; }
+  .day-row h4 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .day-chip { font-size: 12px; padding: 4px 10px; background: var(--soft); border: none; border-radius: var(--r-sm); color: var(--t1); cursor: pointer; transition: all 0.12s; }
+  .day-chip:hover { background: var(--hover); }
+
+  /* 采购 / 营养 / 做法 */
+  .zone { margin-bottom: 14px; }
+  .zone h4 { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+  .zone ul { list-style: none; }
+  .zone li { font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--line); color: var(--t1); }
+  .zone li .amt { color: var(--t3); font-size: 12px; }
+  .nutri-strip { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; margin-bottom: 8px; }
+  .nutri-strip .k { color: var(--t2); }
+  .nutri-strip .v { font-weight: 600; }
+  .tips { font-size: 13px; color: var(--accent); margin-top: 6px; }
+  .step-dish { margin-bottom: 16px; }
+  .step-dish h4 { font-size: 14px; margin-bottom: 6px; }
+  .step-dish ol { padding-left: 20px; font-size: 13px; color: var(--t1); }
+  .step-dish li { margin: 3px 0; }
+
+  /* 编排过程 */
+  .trace-line { font-size: 12px; color: var(--t2); padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .trace-line b { color: var(--accent); font-weight: 600; }
+
+  /* 侧栏 */
+  .side-col { display: flex; flex-direction: column; gap: 16px; }
+  .side-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
+  .side-title { font-size: 13px; font-weight: 600; color: var(--t1); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .side-title button { background: transparent; border: none; font-size: 12px; color: var(--t2); cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); transition: all 0.15s; }
+  .side-title button:hover { color: var(--accent); }
+  .profile-empty { font-size: 13px; color: var(--t3); line-height: 1.6; }
+  .pf-line { font-size: 13px; margin-bottom: 10px; }
+  .pf-line:last-child { margin-bottom: 0; }
+  .pf-line .pf-label { color: var(--t2); font-size: 12px; display: block; margin-bottom: 4px; }
+  .pf-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pf-chip { font-size: 12px; padding: 2px 9px; border-radius: var(--r-sm); background: var(--soft); color: var(--t1); }
+  .pf-chip.avoid { background: var(--accent-soft); color: var(--accent); }
+
+  .reuse-input-row { display: flex; gap: 8px; }
+  .reuse-input-row input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid var(--line2); border-radius: var(--r-sm); outline: none; }
+  .reuse-input-row input:focus { border-color: var(--accent); }
+  .reuse-input-row button { padding: 7px 12px; background: var(--accent); color: #fff; border: none; border-radius: var(--r-sm); font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .reuse-item { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; margin-top: 10px; }
+  .reuse-item h5 { font-size: 13px; color: var(--accent); font-weight: 600; }
+  .reuse-item p { font-size: 12px; color: var(--t2); margin-top: 4px; line-height: 1.6; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px);
+    background: var(--t1); color: #fff; padding: 9px 18px; border-radius: 22px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 99;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>🍳 今天吃什么</h1>
+<div class="page">
+
+  <header class="topbar">
+    <h1>今天吃什么</h1>
     <p>从"不知道吃什么"到"菜端上桌"，约束内随机，帮你一次搞定</p>
   </header>
 
-  <div class="grid">
-    <!-- 左：输入表单 -->
-    <div class="card">
-      <h2>怎么吃？</h2>
+  <!-- 入口面板 -->
+  <section class="entry-panel">
+    <div class="entry-head">
+      <h2>今天想吃什么？</h2>
+      <button class="advanced-toggle" id="advToggle">高级配置 <span class="arrow">▾</span></button>
+    </div>
 
-      <div class="seg" id="mode_seg">
-        <button class="on" data-mode="meal">今日一餐</button>
-        <button data-mode="weekly">一周菜单</button>
+    <div class="entry-body">
+      <div class="scene-pills" id="scenePills"></div>
+      <div class="entry-controls">
+        <div class="counter" id="peopleCounter">
+          <span class="counter-label">人数</span>
+          <div class="counter-ctrl">
+            <button data-step="-1">−</button>
+            <input type="text" value="3" readonly>
+            <button data-step="1">+</button>
+          </div>
+        </div>
+        <div class="counter" id="dishCounter">
+          <span class="counter-label">菜</span>
+          <div class="counter-ctrl">
+            <button data-step="-1">−</button>
+            <input type="text" value="2" readonly>
+            <button data-step="1">+</button>
+          </div>
+        </div>
+        <div class="counter" id="soupCounter">
+          <span class="counter-label">汤</span>
+          <div class="counter-ctrl">
+            <button data-step="-1">−</button>
+            <input type="text" value="1" readonly>
+            <button data-step="1">+</button>
+          </div>
+        </div>
+        <div class="counter" id="dayCounter" style="display:none">
+          <span class="counter-label">天数</span>
+          <div class="counter-ctrl">
+            <button data-step="-1">−</button>
+            <input type="text" value="7" readonly>
+            <button data-step="1">+</button>
+          </div>
+        </div>
+        <button class="btn-generate" id="btnGenerate">生成方案 →</button>
       </div>
+    </div>
 
-      <label class="chk-row" id="graph_row"><input type="checkbox" id="use_graph" checked> 🧠 多 Agent 编排（LangGraph）</label>
+    <div class="scene-hint" id="sceneHint"></div>
 
-      <label style="margin-top:14px">场景模板（一键预设）</label>
-      <div class="scenes" id="scenes"></div>
-
-      <div id="days_row" class="hidden">
-        <label>安排几天</label>
-        <select id="days">
-          <option value="3">3 天</option>
-          <option value="5">5 天</option>
-          <option value="7" selected>7 天</option>
-          <option value="10">10 天</option>
-          <option value="14">14 天</option>
-        </select>
+    <div class="advanced-panel" id="advPanel">
+      <div class="adv-group">
+        <label class="adv-label">忌口（硬约束）</label>
+        <div class="chips" id="tabooChips"></div>
       </div>
-
-      <div class="row2">
-        <div><label>人数</label><input type="number" id="people" value="3" min="1" max="20"></div>
-        <div><label>几菜几汤</label>
-          <div class="row2">
-            <div><label style="font-size:12px">菜</label><input type="number" id="dishes" value="2" min="0" max="10"></div>
-            <div><label style="font-size:12px">汤</label><input type="number" id="soups" value="1" min="0" max="5"></div>
+      <div class="adv-group">
+        <label class="adv-label">过敏（硬约束）</label>
+        <div class="chips" id="allergyChips"></div>
+      </div>
+      <div class="adv-group">
+        <label class="adv-label">口味偏好（软约束）</label>
+        <div class="chips" id="tasteChips"></div>
+      </div>
+      <div class="adv-group">
+        <label class="adv-label">厨房设备</label>
+        <div class="chips" id="deviceChips"></div>
+      </div>
+      <div class="adv-group">
+        <label class="adv-label">其他约束</label>
+        <div class="adv-row">
+          <div class="field">
+            <label>预算（元 / 整桌）</label>
+            <input type="number" id="budget" placeholder="不限">
+          </div>
+          <div class="field">
+            <label>时间（分钟）</label>
+            <select id="timeBudget">
+              <option value="">不限</option>
+              <option value="20">20 分钟内</option>
+              <option value="30">30 分钟内</option>
+              <option value="60">60 分钟内</option>
+              <option value="90">90 分钟内</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>难度上限</label>
+            <select id="maxDifficulty">
+              <option value="">不限</option>
+              <option value="1">★ 极简</option>
+              <option value="2">★★ 简单</option>
+              <option value="3">★★★ 中等</option>
+              <option value="4">★★★★ 挑战</option>
+              <option value="5">★★★★★ 硬核</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>营养目标</label>
+            <select id="nutritionGoal">
+              <option value="">无</option>
+              <option>均衡</option>
+              <option>减脂</option>
+              <option>增肌</option>
+              <option>控糖</option>
+            </select>
           </div>
         </div>
       </div>
-
-      <label>忌口（硬约束）</label>
-      <div class="chips" id="taboos"></div>
-
-      <label>过敏（硬约束）</label>
-      <div class="chips" id="allergies"></div>
-
-      <label>口味偏好（软约束）</label>
-      <div class="chips" id="tastes"></div>
-
-      <div class="row2">
-        <div><label>预算（元，可选）</label><input type="number" id="budget" placeholder="如 60"></div>
-        <div><label>时间预算（分钟，可选）</label>
-          <select id="time_budget"><option value="">不限</option><option>20</option><option selected>30</option><option>60</option><option>90</option></select>
-        </div>
+      <div class="adv-group">
+        <label class="adv-label">家里现有食材（优先消耗，逗号分隔）</label>
+        <div class="adv-row"><div class="field" style="min-width:280px"><input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿"></div></div>
       </div>
-
-      <label>厨房设备</label>
-      <div class="chips" id="devices"></div>
-
-      <label>难度上限（可选）</label>
-      <select id="max_difficulty"><option value="">不限</option><option value="1">★ 极简</option><option value="2">★★ 简单</option><option value="3">★★★ 中等</option><option value="4">★★★★ 挑战</option><option value="5">★★★★★ 硬核</option></select>
-
-      <label>家里现有食材（逗号分隔，优先消耗）</label>
-      <input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿">
-
-      <label>营养目标</label>
-      <select id="nutrition_goal"><option value="">无</option><option>均衡</option><option>减脂</option><option>增肌</option><option>控糖</option></select>
-
-      <button class="btn" id="go">🍽 给我推荐</button>
-      <button class="btn secondary" id="reshuffle">🎲 换一批（约束内随机）</button>
-      <div id="error"></div>
-
-      <details>
-        <summary>⚙️ LLM 设置（BYOK，自带 Key）</summary>
-        <label>Base URL（填到 /v1）</label>
-        <input type="text" id="base_url" placeholder="https://api.deepseek.com/v1">
-        <label>API Key</label>
-        <input type="text" id="api_key" placeholder="sk-...">
-        <label>模型名</label>
-        <input type="text" id="model" placeholder="deepseek-chat">
-        <div class="settings-row">
-          <button class="btn secondary" id="ollama_setup" style="margin-top:12px">🦙 配置本地 Ollama</button>
-          <select id="ollama_models" style="flex:1;margin-top:12px" disabled><option>拉取本地模型后在此选择</option></select>
-        </div>
-        <div class="settings-row">
-          <button class="btn secondary" id="save_llm" style="margin-top:12px">保存</button>
-          <button class="btn secondary" id="test_llm" style="margin-top:12px">测试连接</button>
-        </div>
-        <div class="setting-hint">支持 DeepSeek / GLM / Qwen / Moonshot / Ollama 等所有 OpenAI 兼容接口。Key 只存本地后端，不上传。</div>
-      </details>
-    </div>
-
-    <!-- 右：结果 -->
-    <div>
-      <div class="card" id="profile_card">
-        <h2>👤 家庭味觉画像 <button class="btn secondary" id="refresh_profile" style="width:auto;margin:0;padding:2px 10px;font-size:12px;float:right">刷新</button></h2>
-        <div id="profile_body" class="profile-block">加载中…</div>
-      </div>
-
-      <div id="result" class="card hidden">
-        <h2 id="result_title">今日餐桌方案</h2>
-        <details id="trace_wrap" class="hidden" style="margin-bottom:12px">
-          <summary>🔎 查看多 Agent 编排过程</summary>
-          <div id="trace" style="margin-top:8px"></div>
-        </details>
-        <div class="pairing" id="pairing"></div>
-        <div id="menu"></div>
-        <h2 style="margin-top:20px">🧺 合并采购清单 <span style="font-size:12px;color:var(--sub)" id="cost"></span></h2>
-        <div id="shopping"></div>
-        <h2 style="margin-top:20px">🥗 营养分析（粗略）</h2>
-        <div id="nutrition"></div>
-        <h2 style="margin-top:20px">👨‍🍳 分步做法</h2>
-        <div id="steps"></div>
-      </div>
-
-      <div id="loading" class="card spin hidden">正在为你搭配…</div>
-
-      <div class="card" id="reuse_card">
-        <h2>♻️ 剩菜再利用（一菜两吃）</h2>
-        <div class="settings-row">
-          <input type="text" id="reuse_input" placeholder="输入剩的菜名，如：回锅肉">
-          <button class="btn" id="reuse_go" style="margin:0;width:auto;padding:9px 16px">找做法</button>
-        </div>
-        <div class="setting-hint">昨天剩了菜？点上方菜单卡里的"♻️ 剩了怎么再加工"，或直接输入菜名。</div>
-        <div id="reuse_result" style="margin-top:12px"></div>
+      <div class="adv-group">
+        <label class="check-row"><input type="checkbox" id="useGraph" checked> 多 Agent 编排（营养师不达标会自动回退重选）</label>
       </div>
     </div>
+  </section>
+
+  <!-- 主体双栏 -->
+  <div class="main-grid">
+    <main class="main-panel">
+      <div class="view-tabs">
+        <button class="view-tab active" data-view="meal">今日一餐</button>
+        <button class="view-tab" data-view="weekly">一周菜单</button>
+      </div>
+
+      <div id="resultArea">
+        <div class="empty-state">
+          <div class="big">🍳</div>
+          选好场景，点「生成方案」<br>给你一桌惊喜但不离谱的搭配
+        </div>
+      </div>
+    </main>
+
+    <aside class="side-col">
+      <div class="side-card">
+        <div class="side-title">家庭味觉画像 <button id="refreshProfile">刷新</button></div>
+        <div id="profileBody" class="profile-empty">加载中…</div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">剩菜再利用</div>
+        <div class="reuse-input-row">
+          <input type="text" id="reuseInput" placeholder="输入剩的菜名，如：红烧肉">
+          <button id="reuseGo">找做法</button>
+        </div>
+        <div id="reuseResult"></div>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -259,8 +403,11 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 
 <script>
 let META = null;
-let MODE = 'meal';
+let view = 'meal';          // meal | weekly
 let currentScene = null;
+let currentPeople = 3;
+let currentSeed = null;
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -271,327 +418,335 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+/* ---------- 元数据加载 ---------- */
 async function loadMeta() {
-  const r = await fetch('/api/meta');
-  META = await r.json();
-  renderChips('taboos', META.taboos);
-  renderChips('allergies', META.allergies);
-  renderChips('tastes', META.tastes);
-  renderChips('devices', META.devices);
-  renderScenes(META.scenes || []);
-  const s = await (await fetch('/api/settings')).json();
-  $('base_url').value = s.base_url || '';
-  $('api_key').value = s.api_key || '';
-  $('model').value = s.model || '';
+  META = await (await fetch('/api/meta')).json();
+  renderScenePills(META.scenes || []);
+  renderChips($('tabooChips'), META.taboos);
+  renderChips($('allergyChips'), META.allergies);
+  renderChips($('tasteChips'), META.tastes);
+  renderChips($('deviceChips'), META.devices);
   loadProfile();
 }
 
-function renderChips(id, items) {
-  const el = $(id);
+function renderScenePills(scenes) {
+  const el = $('scenePills');
   el.innerHTML = '';
-  items.forEach(it => {
-    const c = document.createElement('span');
+  scenes.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'scene-pill';
+    b.textContent = `${s.icon || ''} ${s.name}`;
+    b.onclick = () => applyScene(s, b);
+    el.appendChild(b);
+  });
+}
+
+function renderChips(el, items) {
+  el.innerHTML = '';
+  (items || []).forEach(it => {
+    const c = document.createElement('button');
     c.className = 'chip';
     c.textContent = it;
-    c.onclick = () => c.classList.toggle('on');
+    c.onclick = () => c.classList.toggle('selected');
     el.appendChild(c);
   });
 }
 
-function getChips(id) {
-  return [...$(id).querySelectorAll('.chip.on')].map(c => c.textContent);
-}
+function getSelected(el) { return [...el.querySelectorAll('.chip.selected')].map(c => c.textContent); }
 
-function renderScenes(scenes) {
-  const el = $('scenes');
-  el.innerHTML = '';
-  scenes.forEach(s => {
-    const d = document.createElement('div');
-    d.className = 'scene-card';
-    d.dataset.id = s.id;
-    d.innerHTML = `<div class="s-name">${esc(s.icon)} ${esc(s.name)}</div><div class="s-desc">${esc(s.desc)}</div>`;
-    d.onclick = () => applyScene(s, d);
-    el.appendChild(d);
-  });
-}
-
+/* ---------- 场景 ---------- */
 function applyScene(s, el) {
   if (currentScene === s.id) {
-    // 再点一次取消场景
     currentScene = null;
-    el.classList.remove('on');
+    document.querySelectorAll('.scene-pill').forEach(x => x.classList.remove('active'));
+    $('sceneHint').innerHTML = '';
     toast('已取消场景预设');
     return;
   }
   currentScene = s.id;
-  document.querySelectorAll('.scene-card').forEach(x => x.classList.remove('on'));
-  el.classList.add('on');
+  document.querySelectorAll('.scene-pill').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
   const d = s.defaults || {};
-  if (d.dishes !== undefined) $('dishes').value = d.dishes;
-  if (d.soups !== undefined) $('soups').value = d.soups;
-  if (d.time_budget !== undefined) $('time_budget').value = d.time_budget ?? '';
-  if (d.max_difficulty !== undefined) $('max_difficulty').value = d.max_difficulty ?? '';
-  if (d.nutrition_goal !== undefined) $('nutrition_goal').value = d.nutrition_goal ?? '';
-  toast(`已应用「${s.name}」预设`);
+  if (d.dishes !== undefined) setCounter('dishCounter', d.dishes, 0, 10);
+  if (d.soups !== undefined) setCounter('soupCounter', d.soups, 0, 5);
+  if (d.time_budget !== undefined) $('timeBudget').value = d.time_budget ?? '';
+  if (d.max_difficulty !== undefined) $('maxDifficulty').value = d.max_difficulty ?? '';
+  if (d.nutrition_goal !== undefined) $('nutritionGoal').value = d.nutrition_goal ?? '';
+  $('sceneHint').innerHTML = `已应用 <b>${esc(s.name)}</b>：${esc(s.desc || '')}`;
 }
 
+/* ---------- 计数器 ---------- */
+function bindCounter(id, min, max) {
+  const ctrl = $(id).querySelector('.counter-ctrl');
+  const input = ctrl.querySelector('input');
+  ctrl.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      let v = parseInt(input.value) + parseInt(btn.dataset.step);
+      v = Math.max(min, Math.min(max, v));
+      input.value = v;
+      if (id === 'peopleCounter') currentPeople = v;
+    };
+  });
+}
+function setCounter(id, v, min, max) {
+  const input = $(id).querySelector('input');
+  input.value = Math.max(min, Math.min(max, v));
+  if (id === 'peopleCounter') currentPeople = input.value | 0;
+}
+
+/* ---------- 高级配置展开 ---------- */
+$('advToggle').onclick = () => {
+  $('advToggle').classList.toggle('open');
+  $('advPanel').classList.toggle('open');
+};
+
+/* ---------- Tab 切换 ---------- */
+document.querySelectorAll('.view-tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.view-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    view = t.dataset.view;
+    // 周计划：隐藏菜/汤，显示天数
+    const weekly = view === 'weekly';
+    $('dishCounter').style.display = weekly ? 'none' : '';
+    $('soupCounter').style.display = weekly ? 'none' : '';
+    $('dayCounter').style.display = weekly ? '' : 'none';
+    $('resultArea').innerHTML = emptyHTML(weekly ? '一周不重样，顺便把整周采购清单算好' : '选好场景，点「生成方案」');
+  };
+});
+
+function emptyHTML(hint) {
+  return `<div class="empty-state"><div class="big">🍳</div>${esc(hint)}</div>`;
+}
+
+/* ---------- 组装请求 ---------- */
 function buildReq() {
   return {
-    people: +$('people').value || 1,
-    dishes: +$('dishes').value || 0,
-    soups: +$('soups').value || 0,
-    taboos: getChips('taboos'),
-    allergies: getChips('allergies'),
-    taste_prefs: getChips('tastes'),
+    people: currentPeople,
+    dishes: +($('dishCounter').querySelector('input').value) || 0,
+    soups: +($('soupCounter').querySelector('input').value) || 0,
+    taboos: getSelected($('tabooChips')),
+    allergies: getSelected($('allergyChips')),
+    taste_prefs: getSelected($('tasteChips')),
+    devices: getSelected($('deviceChips')),
     budget: $('budget').value ? +$('budget').value : null,
-    time_budget: $('time_budget').value ? +$('time_budget').value : null,
-    devices: getChips('devices'),
-    max_difficulty: $('max_difficulty').value ? +$('max_difficulty').value : null,
+    time_budget: $('timeBudget').value ? +$('timeBudget').value : null,
+    max_difficulty: $('maxDifficulty').value ? +$('maxDifficulty').value : null,
+    nutrition_goal: $('nutritionGoal').value || null,
     pantry: $('pantry').value.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
-    nutrition_goal: $('nutrition_goal').value || null,
     scene_id: currentScene,
-    seed: null,
   };
 }
 
-function typeClass(t) {
-  if (t === '荤') return 'meat';
-  if (t === '素') return 'veg';
-  if (t === '汤') return 'soup';
-  return '';
-}
-function spiceClass(s) {
-  if (s === '辣') return 'spicy';
-  if (s === '微辣') return 'mild';
-  return 'plain';
+/* ---------- 生成 ---------- */
+async function generate() {
+  const btn = $('btnGenerate');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  currentSeed = Math.floor(Math.random() * 1e9);
+
+  try {
+    let url, body;
+    if (view === 'weekly') {
+      url = '/api/weekly';
+      body = Object.assign({}, buildReq(), { days: +($('dayCounter').querySelector('input').value) || 7, seed: currentSeed });
+    } else if ($('useGraph').checked) {
+      url = '/api/plan/graph';
+      body = Object.assign({}, buildReq(), { seed: currentSeed });
+    } else {
+      url = '/api/recommend';
+      body = Object.assign({}, buildReq(), { seed: currentSeed });
+    }
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await r.json();
+    if (data.ok === false) { $('resultArea').innerHTML = emptyHTML(data.error || '没有符合条件的菜，试试放宽约束'); return; }
+    if (view === 'weekly') renderWeekly(data); else renderMeal(data);
+  } catch (e) {
+    $('resultArea').innerHTML = emptyHTML('请求失败：' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '生成方案 →';
+  }
 }
 
-function menuItemHTML(r) {
+$('btnGenerate').onclick = generate;
+
+/* ---------- 菜品卡 ---------- */
+function typeClass(t) { return t === '素' ? 'veg' : t === '汤' ? 'soup' : ''; }
+
+function dishCard(r) {
+  const perPerson = currentPeople > 0 ? Math.round((r.calories_kcal || 0) / currentPeople) : 0;
   return `
-    <div class="menu-item" data-id="${esc(r.id)}" data-name="${esc(r.name)}">
-      <h3>${esc(r.name)}
-        <span class="tag ${typeClass(r.dish_type)}">${esc(r.dish_type||'')}</span>
-        ${r.spiciness ? `<span class="tag ${spiceClass(r.spiciness)}">${esc(r.spiciness)}</span>` : ''}
-      </h3>
-      <div class="meta">${(r.taste||[]).join('/')} · 时令${esc(r.season||'四季')} · 难度 ${'★'.repeat(r.difficulty||0)} · ${r.estimated_minutes ? r.estimated_minutes+' 分钟' : '耗时未知'} · ${r.calories_kcal} 大卡</div>
-      <div class="item-actions">
-        <button class="fb" data-id="${esc(r.id)}" data-v="1">👍 喜欢</button>
-        <button class="fb" data-id="${esc(r.id)}" data-v="-1">👎 不喜欢</button>
-        <button class="reuse-link" data-name="${esc(r.name)}">♻️ 剩了怎么再加工</button>
+    <div class="dish-card">
+      <div class="dish-name">${esc(r.name)}</div>
+      <div class="dish-tags">
+        <span class="tag ${typeClass(r.dish_type)}">${esc(r.dish_type || '')}</span>
+        ${r.spiciness ? `<span class="tag">${esc(r.spiciness)}</span>` : ''}
+      </div>
+      <div class="dish-meta">
+        ${(r.taste || []).join(' · ') || ''}${(r.taste || []).length ? ' · ' : ''}时令 ${esc(r.season || '四季')}<br>
+        <span class="star">${'★'.repeat(r.difficulty || 0)}</span> · ${r.estimated_minutes ? r.estimated_minutes + ' 分钟' : '耗时未知'} · 整盘 ${r.calories_kcal} 大卡${perPerson ? `（人均 ${perPerson}）` : ''}
+      </div>
+      <div class="dish-actions">
+        <button class="action-btn like" data-id="${esc(r.id)}">👍 喜欢</button>
+        <button class="action-btn dislike" data-id="${esc(r.id)}">👎 不喜欢</button>
+        <button class="action-btn reuse" data-name="${esc(r.name)}">♻ 再加工</button>
       </div>
     </div>`;
 }
 
-function renderShopping(shopping, costText) {
-  let html = shopping.zones.map(z => `
-    <div class="zone"><h4>${esc(z.zone)}区</h4><ul>
-      ${z.items.map(it => `<li>${esc(it.name)}${it.optional?' <span class="amt">(可选)</span>':''} <span class="amt">${it.amount ? '· '+esc(it.amount) : ''} ${it.used_by.length>1 ? '· 共'+it.used_by.length+'道菜用' : ''}</span></li>`).join('')}
+/* ---------- 渲染：今日一餐 ---------- */
+function renderMeal(d) {
+  let html = '';
+  if (d.agent_trace && d.agent_trace.length) {
+    html += disclosure('agentTrace', '查看多 Agent 编排过程',
+      d.agent_trace.map(t => `<div class="trace-line"><b>${esc(t.agent)}</b>：${esc(t.note)}</div>`).join(''));
+  }
+
+  const perPerson = d.nutrition ? d.nutrition.per_person_kcal : 0;
+  let meta = `共 ${d.menu.length} 道 · 人均 ${perPerson} 大卡 · 估算 ${d.shopping ? d.shopping.est_cost_yuan : 0} 元`;
+  if (d.info && d.info.fallback) meta += ' · <b style="color:#C8622B">约束太紧，已给最接近的方案</b>';
+  html += `<div class="plan-summary">${esc(d.pairing_note || '')}<div class="summary-meta">${meta}</div></div>`;
+
+  html += `<div class="dish-grid">${d.menu.map(dishCard).join('')}</div>`;
+
+  html += disclosure('detail', '采购清单 & 营养 & 分步做法',
+    (d.shopping ? renderShopping(d.shopping) : '') + renderNutrition(d.nutrition) + renderSteps(d.menu));
+
+  $('resultArea').innerHTML = html;
+}
+
+/* ---------- 渲染：一周菜单 ---------- */
+function renderWeekly(d) {
+  const s = d.summary || {};
+  let html = `<div class="week-summary">
+    共 <b>${s.days}</b> 天 · <b>${s.total_dishes}</b> 道菜（<b>${s.unique_dishes}</b> 道不重样） ·
+    荤 <b>${s.meat}</b> / 素 <b>${s.veg}</b> / 汤 <b>${s.soup}</b> ·
+    整周估算 <b>${d.week_shopping ? d.week_shopping.est_cost_yuan : 0}</b> 元
+  </div>`;
+
+  html += (d.days || []).map(day => `
+    <div class="day-row">
+      <h4>第 ${day.day} 天</h4>
+      <div class="day-chips">
+        ${day.menu && day.menu.length
+          ? day.menu.map(r => `<button class="day-chip" data-name="${esc(r.name)}">${esc(r.name)}</button>`).join('')
+          : `<span class="tips">${esc(day.error || '无结果')}</span>`}
+      </div>
+    </div>`).join('');
+
+  html += disclosure('weekDetail', '整周采购清单', d.week_shopping ? renderShopping(d.week_shopping) : '');
+
+  $('resultArea').innerHTML = html;
+}
+
+function disclosure(id, title, body) {
+  return `<button class="disclosure" data-toggle="${id}"><span class="arrow">▶</span><span>${esc(title)}</span></button>
+          <div class="disclose-body" id="${id}">${body}</div>`;
+}
+
+function renderShopping(shopping) {
+  return shopping.zones.map(z => `
+    <div class="zone"><h4>${esc(z.zone)}</h4><ul>
+      ${z.items.map(it => `<li>${esc(it.name)}${it.optional ? ' <span class="amt">(可选)</span>' : ''} <span class="amt">${it.amount ? '· ' + esc(it.amount) : ''}${it.used_by.length > 1 ? ' · 共 ' + it.used_by.length + ' 道菜用' : ''}</span></li>`).join('')}
     </ul></div>`).join('');
-  if (costText) $('cost').textContent = costText;
-  $('shopping').innerHTML = html;
 }
 
 function renderNutrition(n) {
-  $('nutrition').innerHTML = `
-    <div class="nutri">
+  if (!n) return '';
+  return `<div class="zone"><h4>营养粗估</h4>
+    <div class="nutri-strip">
       <span><span class="k">总热量</span> <span class="v">${n.total_kcal}</span> 大卡</span>
       <span><span class="k">人均</span> <span class="v">${n.per_person_kcal}</span> 大卡</span>
       <span><span class="k">荤/素/汤</span> <span class="v">${n.meat_count}/${n.veg_count}/${n.soup_count}</span></span>
-      <span><span class="k">蛋白:脂:碳</span> <span class="v">${n.protein_kcal}:${n.fat_kcal}:${n.carb_kcal}</span> 大卡</span>
     </div>
-    ${n.tips.map(t => `<div class="tips">💡 ${esc(t)}</div>`).join('')}`;
-}
-
-function renderTrace(trace) {
-  if (!trace || !trace.length) { $('trace_wrap').classList.add('hidden'); return; }
-  $('trace_wrap').classList.remove('hidden');
-  $('trace').innerHTML = trace.map(t => `<div class="trace-line"><b>${esc(t.agent)}</b>：${esc(t.note)}</div>`).join('');
+    ${(n.tips || []).map(t => `<div class="tips">${esc(t)}</div>`).join('')}
+  </div>`;
 }
 
 function renderSteps(menu) {
-  $('steps').innerHTML = menu.map(r => `
-    <div class="menu-item">
-      <h3>${esc(r.name)}</h3>
-      ${(r.steps||[]).map(g => `
-        <div class="steps-group">
-          ${g.group ? `<h4>${esc(g.group)}</h4>` : ''}
-          <ol>${g.steps.map(s => `<li>${esc(s.text)}${s.sub.length ? '<ul class="sub">'+s.sub.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>' : ''}</li>`).join('')}</ol>
-        </div>`).join('')}
-      ${(r.tips||[]).length ? `<div class="tips">💡 ${r.tips.map(esc).join('；')}</div>` : ''}
-    </div>`).join('');
+  if (!menu || !menu.length) return '';
+  return `<div class="zone"><h4>分步做法</h4>` + menu.map(r => `
+    <div class="step-dish">
+      <h4>${esc(r.name)}</h4>
+      ${(r.steps || []).map(g => (g.group ? `<h4 style="font-size:12px;color:var(--t2);margin-top:6px">${esc(g.group)}</h4>` : '') +
+        `<ol>${(g.steps || []).map(s => `<li>${esc(s.text)}</li>`).join('')}</ol>`).join('')}
+      ${(r.tips || []).length ? `<div class="tips">${r.tips.map(esc).join('；')}</div>` : ''}
+    </div>`).join('') + `</div>`;
 }
 
-function renderMeal(d) {
-  renderTrace(d.agent_trace);
-  $('pairing').classList.remove('hidden');
-  $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
-  $('menu').innerHTML = d.menu.map(menuItemHTML).join('');
-  let costText = `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`;
-  if (d.info && d.info.fallback) costText += ' ⚠️ 约束太紧，已给最接近的方案';
-  renderShopping(d.shopping, costText);
-  renderNutrition(d.nutrition);
-  renderSteps(d.menu);
-}
-
-function renderWeekly(d) {
-  renderTrace(d.agent_trace);
-  $('pairing').classList.add('hidden');
-  const s = d.summary;
-  $('menu').innerHTML = `
-    <div class="week-summary">
-      <span>共 <b>${s.days}</b> 天 · <b>${s.total_dishes}</b> 道菜（<b>${s.unique_dishes}</b> 道不重样）</span>
-      <span>荤 <b>${s.meat}</b> · 素 <b>${s.veg}</b> · 汤 <b>${s.soup}</b></span>
-      <span>估算总价约 <b>${s.est_cost_yuan}</b> 元</span>
-    </div>
-    ${d.days.map(day => `
-      <div class="day-card">
-        <h3>第 ${day.day} 天</h3>
-        <div class="day-menu">
-          ${day.menu.length ? day.menu.map(r => `<span class="day-chip" data-name="${esc(r.name)}" title="点我看做法 / 再加工">${esc(r.name)}</span>`).join('') : `<span class="tips">${esc(day.error||'无结果')}</span>`}
-        </div>
-      </div>`).join('')}`;
-
-  renderShopping(d.week_shopping, `（整周估算总价约 ${d.week_shopping.est_cost_yuan} 元 / ${d.week_shopping.people} 人）`);
-  // 营养：周人均
-  const total = s.total_kcal || 0;
-  $('nutrition').innerHTML = `
-    <div class="nutri">
-      <span><span class="k">整周总热量</span> <span class="v">${total}</span> 大卡</span>
-      <span><span class="k">日均</span> <span class="v">${Math.round(total / Math.max(1, s.days))}</span> 大卡</span>
-      <span><span class="k">荤/素/汤</span> <span class="v">${s.meat}/${s.veg}/${s.soup}</span></span>
-    </div>
-    <div class="tips">💡 每天可点开菜名查看做法；点 ♻️ 卡输入任一菜名看二次加工。</div>`;
-  // 隐藏单餐做法区
-  $('steps').innerHTML = '';
-}
-
-async function recommend(seed) {
-  $('error').textContent = '';
-  $('loading').classList.remove('hidden');
-  $('result').classList.add('hidden');
-  const req = buildReq();
-  req.seed = seed;
-  try {
-    let url = '/api/recommend', body = req;
-    if (MODE === 'meal' && $('use_graph').checked) url = '/api/plan/graph';
-    if (MODE === 'weekly') {
-      url = '/api/weekly';
-      body = Object.assign({}, req, { days: +$('days').value || 7 });
-    }
-    const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    const data = await r.json();
-    if (data.ok === false) { $('error').textContent = data.error || '无结果'; return; }
-    $('result_title').textContent = MODE === 'weekly' ? '📅 一周菜单计划' : '今日餐桌方案';
-    if (MODE === 'weekly') renderWeekly(data); else renderMeal(data);
-  } catch (e) {
-    $('error').textContent = '请求失败: ' + e.message;
-  } finally {
-    $('loading').classList.add('hidden');
-    $('result').classList.remove('hidden');
+/* ---------- 事件委托：折叠 / 反馈 / 再加工 ---------- */
+$('resultArea').addEventListener('click', e => {
+  const dis = e.target.closest('.disclosure');
+  if (dis) {
+    dis.classList.toggle('open');
+    const body = document.getElementById(dis.dataset.toggle);
+    if (body) body.classList.toggle('open');
+    return;
   }
+  const like = e.target.closest('.action-btn.like');
+  if (like) { sendFeedback(like.dataset.id, 1); like.classList.add('done'); return; }
+  const dislike = e.target.closest('.action-btn.dislike');
+  if (dislike) { sendFeedback(dislike.dataset.id, -1); dislike.classList.add('done'); return; }
+  const reuse = e.target.closest('.action-btn.reuse, .day-chip');
+  if (reuse) { doReuse(reuse.dataset.name); return; }
+});
+
+/* ---------- 反馈 & 画像 ---------- */
+async function sendFeedback(id, v) {
+  try {
+    const r = await (await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe_id: id, feedback: v }) })).json();
+    if (r.ok) { toast(v > 0 ? '已记住：喜欢这道' : '已记住：不喜欢这道'); loadProfile(); }
+  } catch (e) { toast('反馈失败'); }
 }
 
-// ---- 味觉画像 ----
 async function loadProfile() {
   try {
     const p = await (await fetch('/api/profile')).json();
     renderProfile(p);
-  } catch (e) { $('profile_body').textContent = '加载失败'; }
+  } catch (e) { $('profileBody').innerHTML = '<div class="profile-empty">加载失败</div>'; }
 }
+$('refreshProfile').onclick = loadProfile;
 
 function renderProfile(p) {
   if (!p.count) {
-    $('profile_body').innerHTML = `<div class="tips">还没记录过。点菜卡上的 👍 / 👎，慢慢积累属于你家的口味画像。</div>`;
+    $('profileBody').innerHTML = `<div class="profile-empty">还没记录过。点菜卡上的「喜欢 / 不喜欢」，慢慢积累属于你家的口味画像。</div>`;
     return;
   }
-  const chips = (arr, cls='') => arr.length ? arr.map(x => `<span class="pf-chip ${cls}">${esc(x.name)} <i>${x.score>0?'+':''}${x.score}</i></span>`).join('') : '<span class="pf-chip">暂无</span>';
-  $('profile_body').innerHTML = `
-    <div class="pf-line">已记录 <b>${p.count}</b> 次反馈</div>
-    <div class="pf-line">❤️ 爱吃的口味：<div class="pf-chips">${chips(p.top_tastes)}</div></div>
-    <div class="pf-line">🥬 偏爱食材：<div class="pf-chips">${chips(p.top_ingredients)}</div></div>
-    <div class="pf-line">🚫 想避开：<div class="pf-chips">${chips(p.avoid_ingredients,'avoid')}</div></div>
-    <div class="pf-line">⭐ 常点爱吃的菜：<div class="pf-chips">${chips(p.top_dishes)}</div></div>`;
+  const chips = (arr, cls) => arr && arr.length
+    ? arr.map(x => `<span class="pf-chip ${cls}">${esc(x.name)}</span>`).join('')
+    : '<span class="pf-chip">暂无</span>';
+  $('profileBody').innerHTML = `
+    <div class="pf-line">已记录 <b>${p.count}</b> 次</div>
+    <div class="pf-line"><span class="pf-label">爱吃的口味</span><div class="pf-chips">${chips(p.top_tastes)}</div></div>
+    <div class="pf-line"><span class="pf-label">偏爱食材</span><div class="pf-chips">${chips(p.top_ingredients)}</div></div>
+    <div class="pf-line"><span class="pf-label">想避开</span><div class="pf-chips">${chips(p.avoid_ingredients, 'avoid')}</div></div>
+    <div class="pf-line"><span class="pf-label">常点爱吃的菜</span><div class="pf-chips">${chips(p.top_dishes)}</div></div>`;
 }
 
-async function sendFeedback(id, v) {
+/* ---------- 剩菜再利用 ---------- */
+async function doReuse(name) {
+  $('reuseInput').value = name;
+  $('reuseResult').innerHTML = '<div class="tips" style="margin-top:10px">正在找二次加工做法…</div>';
   try {
-    const r = await (await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({recipe_id:id, feedback:v}) })).json();
-    if (r.ok) { toast(v>0 ? '👍 已记住：喜欢这道' : '👎 已记住：不喜欢这道'); loadProfile(); }
-  } catch (e) { toast('反馈失败'); }
-}
-
-// ---- 剩菜再利用 ----
-async function reuse(name) {
-  $('reuse_input').value = name;
-  const el = $('reuse_result');
-  el.innerHTML = '<div class="spin">正在找二次加工做法…</div>';
-  try {
-    const d = await (await fetch('/api/leftover', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({recipe_name:name, n:3}) })).json();
-    if (d.error) { el.innerHTML = `<div class="tips">${esc(d.error)}</div>`; return; }
-    el.innerHTML = d.suggestions.map(s => `
+    const d = await (await fetch('/api/leftover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe_name: name, n: 3 }) })).json();
+    if (d.error) { $('reuseResult').innerHTML = `<div class="tips" style="margin-top:10px">${esc(d.error)}</div>`; return; }
+    $('reuseResult').innerHTML = (d.suggestions || []).map(s => `
       <div class="reuse-item">
-        <h4>→ ${esc(s.recipe.name)} ${s.recipe.dish_type ? `<span class="tag ${typeClass(s.recipe.dish_type)}">${esc(s.recipe.dish_type)}</span>` : ''}</h4>
-        <div class="how">${esc(s.how)}</div>
-        <div class="meta" style="font-size:12px;color:var(--sub)">${s.recipe.estimated_minutes ? s.recipe.estimated_minutes+' 分钟 · ' : ''}难度 ${'★'.repeat(s.recipe.difficulty||0)} · ${s.recipe.calories_kcal} 大卡</div>
-      </div>`).join('') || '<div class="tips">没找到合适的二次加工，换个菜名试试。</div>';
-    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  } catch (e) { el.innerHTML = `<div class="tips">请求失败: ${esc(e.message)}</div>`; }
+        <h5>→ ${esc(s.recipe.name)}</h5>
+        <p>${esc(s.how)}</p>
+      </div>`).join('') || '<div class="tips" style="margin-top:10px">没找到合适的二次加工，换个菜名试试。</div>';
+    $('reuseResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) { $('reuseResult').innerHTML = `<div class="tips" style="margin-top:10px">请求失败：${esc(e.message)}</div>`; }
 }
+$('reuseGo').onclick = () => { const v = $('reuseInput').value.trim(); if (v) doReuse(v); };
+$('reuseInput').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = $('reuseInput').value.trim(); if (v) doReuse(v); } });
 
-// ---- 事件绑定 ----
-$('mode_seg').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  [...$('mode_seg').children].forEach(x => x.classList.remove('on'));
-  b.classList.add('on');
-  MODE = b.dataset.mode;
-  $('days_row').classList.toggle('hidden', MODE !== 'weekly');
-  $('graph_row').classList.toggle('hidden', MODE !== 'meal');
-  $('result').classList.add('hidden');
-});
-
-$('menu').addEventListener('click', e => {
-  const fb = e.target.closest('.fb');
-  if (fb) { sendFeedback(fb.dataset.id, +fb.dataset.v); fb.classList.add('done'); return; }
-  const rl = e.target.closest('.reuse-link');
-  if (rl) { reuse(rl.dataset.name); return; }
-  const dc = e.target.closest('.day-chip');
-  if (dc) { reuse(dc.dataset.name); return; }
-});
-
-$('go').onclick = () => recommend(Math.floor(Math.random()*1e9));
-$('reshuffle').onclick = () => recommend(Math.floor(Math.random()*1e9));
-$('reuse_go').onclick = () => { const v = $('reuse_input').value.trim(); if (v) reuse(v); };
-$('reuse_input').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = $('reuse_input').value.trim(); if (v) reuse(v); } });
-$('refresh_profile').onclick = loadProfile;
-$('ollama_setup').onclick = async () => {
-  $('base_url').value = 'http://localhost:11434/v1';
-  $('api_key').value = '';
-  toast('已填 Ollama 地址（本地模型无需 Key），正在拉取模型…');
-  try {
-    const r = await (await fetch('/api/llm/models', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({base_url:'http://localhost:11434/v1'})})).json();
-    const sel = $('ollama_models');
-    if (r.models && r.models.length) {
-      sel.innerHTML = r.models.map(m => `<option>${esc(m)}</option>`).join('');
-      sel.disabled = false;
-      $('model').value = r.models[0];
-      sel.onchange = () => { $('model').value = sel.value; };
-      toast(`✅ 找到 ${r.models.length} 个本地模型`);
-    } else {
-      toast('❌ ' + (r.message || '未找到模型，请确认 Ollama 已启动'));
-    }
-  } catch (e) { toast('拉取模型失败: ' + e.message); }
-};
-$('save_llm').onclick = async () => {
-  const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
-  await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-  toast('已保存');
-};
-$('test_llm').onclick = async () => {
-  const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
-  const r = await (await fetch('/api/llm/test', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();
-  toast(r.ok ? '✅ ' + r.message : '❌ ' + r.message);
-};
-
+/* ---------- 初始化 ---------- */
+bindCounter('peopleCounter', 1, 20);
+bindCounter('dishCounter', 0, 10);
+bindCounter('soupCounter', 0, 5);
+bindCounter('dayCounter', 3, 14);
 loadMeta();
 </script>
 </body>
