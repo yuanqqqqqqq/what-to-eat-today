@@ -23,5 +23,5 @@ dist/
 
 # 临时文件
 *.log
-*.png
+_*.png
 .DS_Store
