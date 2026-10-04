@@ -44,8 +44,18 @@
     -webkit-font-smoothing: antialiased;
   }
   button { font-family: inherit; }
+  /* 键盘焦点可见（质量底线，勿移除） */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .page { max-width: 1240px; margin: 0 auto; padding: 40px 32px 80px; }
-  @media (max-width: 700px) { .page { padding: 24px 16px 48px; } }
+  @media (max-width: 700px) {
+    .page { padding: 24px 16px 48px; }
+    /* 移动端入口面板：纵向堆叠，按钮全宽 */
+    .entry-body { flex-direction: column; align-items: stretch; gap: 16px; }
+    .entry-controls { margin-left: 0; justify-content: space-between; }
+    .btn-generate { width: 100%; }
+    .counter-ctrl button { width: 36px; height: 36px; }
+    .counter-ctrl input { width: 36px; height: 36px; }
+  }
 
   /* ========== 顶栏 ========== */
   .topbar { margin-bottom: 28px; }
@@ -601,6 +611,8 @@ async function generate() {
     const data = await r.json();
     if (data.ok === false) { $('resultArea').innerHTML = emptyHTML(data.error || '没有符合条件的菜，试试放宽约束'); return; }
     if (view === 'weekly') renderWeekly(data); else renderMeal(data);
+    // 生成后滚动到结果区（用户点生成就能看到结果）
+    $('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     $('resultArea').innerHTML = emptyHTML('请求失败：' + e.message);
   } finally {
