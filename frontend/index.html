@@ -177,12 +177,25 @@
   .dish-meta { font-size: 12px; color: var(--t2); line-height: 1.7; margin-bottom: 14px; flex: 1; }
   .dish-meta .star { color: var(--accent); }
   .dish-actions { display: flex; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .dish-actions.secondary { border-top: none; padding-top: 6px; }
   .action-btn {
     flex: 1; padding: 6px 8px; font-size: 11px; color: var(--t2); background: transparent;
     border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all 0.15s; white-space: nowrap;
   }
   .action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
   .action-btn.done { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+  .dish-actions.secondary .action-btn { color: var(--t3); border-color: transparent; background: transparent; }
+  .dish-actions.secondary .action-btn:hover { color: var(--accent); background: var(--soft); }
+
+  /* 弹窗 */
+  .modal { position: fixed; inset: 0; background: rgba(31,30,27,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+  .modal.hidden { display: none; }
+  .modal-card { background: var(--card); border-radius: var(--r-lg); max-width: 560px; width: 100%; max-height: 80vh; overflow: auto; padding: 24px 28px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 15px; font-weight: 600; color: var(--t1); }
+  .modal-head button { background: transparent; border: none; font-size: 16px; color: var(--t3); cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); }
+  .modal-head button:hover { color: var(--t1); background: var(--soft); }
+  .modal-body { font-size: 14px; line-height: 1.9; white-space: pre-wrap; color: var(--t1); }
+  .modal-body.spin { color: var(--t3); }
 
   /* 周计划 */
   .week-summary { padding: 16px 20px; background: var(--entry-bg); border-radius: var(--r-md); margin-bottom: 16px; font-size: 13px; color: var(--t2); line-height: 1.8; }
@@ -401,6 +414,13 @@
 
 <div id="toast"></div>
 
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><span id="modalTitle">家常简化版做法</span><button id="modalClose">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 let META = null;
 let view = 'meal';          // meal | weekly
@@ -590,7 +610,10 @@ function dishCard(r) {
       <div class="dish-actions">
         <button class="action-btn like" data-id="${esc(r.id)}">👍 喜欢</button>
         <button class="action-btn dislike" data-id="${esc(r.id)}">👎 不喜欢</button>
+      </div>
+      <div class="dish-actions secondary">
         <button class="action-btn reuse" data-name="${esc(r.name)}">♻ 再加工</button>
+        <button class="action-btn simplify" data-name="${esc(r.name)}">🪄 简化做法</button>
       </div>
     </div>`;
 }
@@ -690,7 +713,33 @@ $('resultArea').addEventListener('click', e => {
   if (dislike) { sendFeedback(dislike.dataset.id, -1); dislike.classList.add('done'); return; }
   const reuse = e.target.closest('.action-btn.reuse, .day-chip');
   if (reuse) { doReuse(reuse.dataset.name); return; }
+  const simplify = e.target.closest('.action-btn.simplify');
+  if (simplify) { doSimplify(simplify.dataset.name); return; }
 });
+
+/* ---------- 简化做法 ---------- */
+function openModal(title, bodyHTML, spin) {
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = bodyHTML;
+  $('modalBody').classList.toggle('spin', !!spin);
+  $('modal').classList.remove('hidden');
+}
+$('modalClose').onclick = () => $('modal').classList.add('hidden');
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').classList.add('hidden'); });
+
+async function doSimplify(name) {
+  openModal(`家常简化版 · ${name}`, '正在让老师傅改写做法…', true);
+  try {
+    const d = await (await fetch('/api/simplify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe_name: name }) })).json();
+    if (d.ok) {
+      openModal(`家常简化版 · ${name}`, esc(d.simplified));
+    } else {
+      openModal('生成失败', `<div class="tips">${esc(d.error || '无法生成简化做法')}</div>`);
+    }
+  } catch (e) {
+    openModal('请求失败', `<div class="tips">${esc(e.message)}</div>`);
+  }
+}
 
 /* ---------- 反馈 & 画像 ---------- */
 async function sendFeedback(id, v) {

@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .agents.planner import generate_plan, generate_weekly, get_engine, reuse_plan
+from .agents.planner import generate_plan, generate_weekly, get_engine, reuse_plan, simplify_recipe
 from .agents.orchestrator import orchestrate
 from .config import get_llm_config, save_llm_config
 from .core.profile import TasteProfile
@@ -191,6 +191,16 @@ def profile_get():
 @app.post("/api/leftover")
 def leftover(req: ReuseRequest):
     return reuse_plan(req.recipe_name, n=req.n)
+
+
+class SimplifyRequest(BaseModel):
+    recipe_name: str
+
+
+@app.post("/api/simplify")
+def simplify(req: SimplifyRequest):
+    """家常简化版做法：用常见调料替代复杂调料（LLM）。"""
+    return simplify_recipe(req.recipe_name)
 
 
 # 静态资源（如有额外 js/css 可放 frontend 下）

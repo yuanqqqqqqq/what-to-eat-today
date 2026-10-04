@@ -36,7 +36,30 @@ SCENES = [
         "desc": "低热量、多蔬菜，目标减脂",
         "defaults": {"dishes": 2, "soups": 1, "max_difficulty": 3, "nutrition_goal": "减脂"},
     },
+    {
+        "id": "home",
+        "name": "家常",
+        "icon": "🍳",
+        "desc": "常见调料、做法简单，妈妈的味道",
+        "defaults": {"dishes": 2, "soups": 1, "max_difficulty": 3},
+    },
 ]
+
+# 非家常调料：家里通常不常备、需专门购买的（命中即排除在家常场景之外）
+COMPLEX_SEASONINGS = (
+    "豆瓣", "蚝油", "十三香", "五香粉", "孜然", "八角", "桂皮", "香叶", "草果",
+    "咖喱", "番茄酱", "沙拉", "芥末", "芝麻酱", "甜面酱", "柱候酱", "海鲜酱",
+    "沙茶", "腐乳", "豆豉", "泡椒", "剁椒", "郫县", "黄油", "奶油", "炼乳",
+    "椰浆", "鱼露", "虾酱", "味噌", "味淋", "照烧", "蒲烧", "芝士", "罗勒",
+    "迷迭香", "百里香", "黑胡椒", "香草", "南姜", "柠檬叶", "XO", "烧烤酱",
+    "沙拉酱", "甜辣酱", "蒜蓉辣酱", "老干妈",
+)
+
+# 名贵/不家常食材（家常场景排除，追求乡土气）
+LUXURY_INGREDIENTS = (
+    "海参", "鲍鱼", "鱼翅", "燕窝", "松茸", "和牛", "龙虾", "帝王蟹",
+    "鹅肝", "藏红花", "雪蛤", "花胶", "鱼子酱", "黑松露",
+)
 
 # 各场景需硬排除的类别（category_cn）
 SCENE_EXCLUDE_CATEGORIES = {
@@ -91,6 +114,13 @@ def scene_hard_exclude(scene_id, recipe: dict) -> bool:
         # 减脂轻食：超过 800 大卡的单菜直接排除（兼防热量数据异常）
         if (recipe.get("calories_kcal") or 0) > 800:
             return True
+    if scene_id == "home":
+        # 家常：排除需专门购买的非家常调料，及名贵食材
+        text = " ".join(i.get("name", "") for i in recipe.get("ingredients", []))
+        if any(s in text for s in COMPLEX_SEASONINGS):
+            return True
+        if any(s in text for s in LUXURY_INGREDIENTS):
+            return True
     return False
 
 
@@ -142,4 +172,11 @@ def scene_score(scene_id, recipe: dict) -> float:
             s -= 1.5
         if d_type == "素":
             s += 1.0
+    elif scene_id == "home":
+        # 越简单越家常：难度低、耗时短加分
+        diff = recipe.get("difficulty") or 3
+        s += max(0.0, (3 - diff)) * 0.5
+        est = recipe.get("estimated_minutes") or 30
+        if est <= 20:
+            s += 0.8
     return s

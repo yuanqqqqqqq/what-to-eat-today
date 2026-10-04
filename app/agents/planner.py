@@ -138,3 +138,50 @@ def reuse_plan(recipe_name: str, n: int = 3) -> dict:
     """一菜两吃入口：给剩菜找二次加工方案。"""
     engine = get_engine()
     return suggest_reuse(engine, recipe_name, n=n)
+
+
+def simplify_recipe(recipe_name: str) -> dict:
+    """家常简化版做法：用常见调料替代复杂调料（LLM，BYOK）。"""
+    from ..core.leftover import find_recipe
+    engine = get_engine()
+    recipe = find_recipe(engine, recipe_name)
+    if recipe is None:
+        return {"ok": False, "error": f"没找到菜「{recipe_name}」，请换个菜名试试"}
+
+    llm = LLMClient(**get_llm_config())
+    if not llm.available:
+        return {"ok": False, "error": "需要先配置 LLM（前端「高级配置 → LLM」或本地 Ollama）才能生成简化做法", "recipe": recipe}
+
+    ingredients = "、".join(i.get("name", "") for i in recipe.get("ingredients", []))
+    steps_text = ""
+    for g in recipe.get("steps", []):
+        if g.get("group"):
+            steps_text += f"\n【{g['group']}】"
+        for st in g.get("steps", []):
+            steps_text += f"\n{st['text']}"
+            for sub in st.get("sub", []):
+                steps_text += f"（{sub}）"
+
+    prompt = (
+        "你是家常菜老师傅。把下面这道菜改写成『家常简化版』做法。\n"
+        "要求：\n"
+        "1. 只用家里常备调料：盐、生抽、老抽、料酒、白糖、醋、葱、姜、蒜（能不用就不放，缺一样也能做）\n"
+        "2. 去掉豆瓣酱、蚝油、十三香、八角桂皮香叶草果、咖喱、黄油奶油、各种酱料等复杂调料；\n"
+        "   实在需要风味的，用常见调料替代并说明怎么替\n"
+        "3. 步骤精简到 4-7 步，每步一句大白话，保留原菜的核心口感和做法\n"
+        "4. 输出纯文本，格式如下（不要 markdown 标题符号）：\n"
+        "家常版·{菜名}\n"
+        "调料：……\n"
+        "做法：\n"
+        "1. ……\n"
+        "2. ……\n"
+        "替代说明：……\n\n"
+        f"原菜名：{recipe['name']}\n"
+        f"原原料：{ingredients}\n"
+        f"原做法：{steps_text}\n"
+    )
+    try:
+        reply = llm.chat([{"role": "user", "content": prompt}], temperature=0.5, max_tokens=900)
+        return {"ok": True, "recipe": recipe, "simplified": reply.strip(), "llm_used": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200], "recipe": recipe}
