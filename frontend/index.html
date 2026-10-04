@@ -26,6 +26,13 @@
     --r-lg: 16px;
     --r-md: 10px;
     --r-sm: 6px;
+
+    /* 动效 tokens（克制 + 强缓动曲线） */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --dur-fast: 120ms;
+    --dur-base: 160ms;
+    --dur-slow: 250ms;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -57,10 +64,10 @@
   .entry-head h2 { font-size: 18px; font-weight: 600; color: var(--t1); }
   .advanced-toggle {
     background: transparent; border: none; font-size: 13px; color: var(--t2);
-    cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); transition: all 0.15s;
+    cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
   }
   .advanced-toggle:hover { color: var(--accent); background: var(--accent-soft); }
-  .advanced-toggle .arrow { display: inline-block; transition: transform 0.2s; font-size: 10px; margin-left: 2px; }
+  .advanced-toggle .arrow { display: inline-block; transition: transform var(--dur-slow) var(--ease-out); font-size: 10px; margin-left: 2px; }
   .advanced-toggle.open .arrow { transform: rotate(180deg); }
 
   .entry-body { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
@@ -69,7 +76,7 @@
   .scene-pill {
     padding: 8px 16px; background: var(--card); border: 1px solid var(--line2);
     border-radius: 24px; font-size: 13px; font-weight: 500; color: var(--t1);
-    cursor: pointer; transition: all 0.15s;
+    cursor: pointer; transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
   }
   .scene-pill:hover { border-color: var(--accent); color: var(--accent); }
   .scene-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -80,7 +87,7 @@
   .counter-ctrl { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line2); border-radius: var(--r-sm); overflow: hidden; }
   .counter-ctrl button {
     width: 28px; height: 30px; background: transparent; border: none; cursor: pointer;
-    font-size: 14px; color: var(--t2); transition: background 0.15s;
+    font-size: 14px; color: var(--t2); transition: background-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
   }
   .counter-ctrl button:hover { background: var(--soft); color: var(--t1); }
   .counter-ctrl input {
@@ -91,7 +98,7 @@
   .btn-generate {
     padding: 10px 22px; background: var(--accent); color: #fff; border: none;
     border-radius: var(--r-sm); font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: background 0.15s; white-space: nowrap;
+    transition: background-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); white-space: nowrap;
   }
   .btn-generate:hover { background: var(--accent-hover); }
   .btn-generate:disabled { opacity: 0.6; cursor: default; }
@@ -109,7 +116,7 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     padding: 5px 12px; font-size: 12px; color: var(--t2); background: var(--soft);
-    border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer; transition: all 0.12s;
+    border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
   }
   .chip:hover { background: var(--hover); color: var(--t1); }
   .chip.selected { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 500; }
@@ -119,7 +126,7 @@
   .field label { display: block; font-size: 12px; color: var(--t2); margin-bottom: 6px; font-weight: 500; }
   .field input, .field select {
     width: 100%; padding: 7px 10px; font-size: 13px; color: var(--t1);
-    border: 1px solid var(--line2); border-radius: var(--r-sm); background: var(--card); outline: none; transition: border-color 0.15s;
+    border: 1px solid var(--line2); border-radius: var(--r-sm); background: var(--card); outline: none; transition: border-color var(--dur-base) var(--ease-out);
   }
   .field input:focus, .field select:focus { border-color: var(--accent); }
   .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t2); cursor: pointer; }
@@ -135,7 +142,7 @@
   .view-tab {
     padding: 10px 4px; margin-right: 20px; background: transparent; border: none;
     font-size: 14px; color: var(--t2); cursor: pointer; border-bottom: 2px solid transparent;
-    margin-bottom: -1px; transition: all 0.15s; font-weight: 500;
+    margin-bottom: -1px; transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); font-weight: 500;
   }
   .view-tab:hover { color: var(--t1); }
   .view-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -145,7 +152,7 @@
     cursor: pointer; padding: 6px 0; background: transparent; border: none; margin-bottom: 16px;
   }
   .disclosure:hover { color: var(--accent); }
-  .disclosure .arrow { font-size: 9px; transition: transform 0.2s; }
+  .disclosure .arrow { font-size: 9px; transition: transform var(--dur-slow) var(--ease-out); }
   .disclosure.open .arrow { transform: rotate(90deg); }
   .disclose-body { display: none; margin-bottom: 20px; }
   .disclose-body.open { display: block; }
@@ -165,7 +172,7 @@
   @media (max-width: 900px) { .dish-grid { grid-template-columns: 1fr; } }
   .dish-card {
     display: flex; flex-direction: column; padding: 16px; background: var(--card);
-    border: 1px solid var(--line); border-radius: var(--r-md); transition: all 0.15s;
+    border: 1px solid var(--line); border-radius: var(--r-md); transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
   }
   .dish-card:hover { border-color: var(--line2); box-shadow: 0 4px 12px rgba(31,30,27,0.06); transform: translateY(-1px); }
   .dish-name { font-size: 15px; font-weight: 600; color: var(--t1); margin-bottom: 6px; }
@@ -180,7 +187,7 @@
   .dish-actions.secondary { border-top: none; padding-top: 6px; }
   .action-btn {
     flex: 1; padding: 6px 8px; font-size: 11px; color: var(--t2); background: transparent;
-    border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); white-space: nowrap;
   }
   .action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
   .action-btn.done { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
@@ -188,9 +195,10 @@
   .dish-actions.secondary .action-btn:hover { color: var(--accent); background: var(--soft); }
 
   /* 弹窗 */
-  .modal { position: fixed; inset: 0; background: rgba(31,30,27,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
-  .modal.hidden { display: none; }
-  .modal-card { background: var(--card); border-radius: var(--r-lg); max-width: 560px; width: 100%; max-height: 80vh; overflow: auto; padding: 24px 28px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); }
+  .modal { position: fixed; inset: 0; background: rgba(31,30,27,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; opacity: 0; visibility: hidden; transition: opacity var(--dur-slow) var(--ease-out), visibility 0s var(--dur-slow); }
+  .modal:not(.hidden) { opacity: 1; visibility: visible; transition: opacity var(--dur-slow) var(--ease-out); }
+  .modal-card { background: var(--card); border-radius: var(--r-lg); max-width: 560px; width: 100%; max-height: 80vh; overflow: auto; padding: 24px 28px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); transform: scale(0.97); transition: transform var(--dur-slow) var(--ease-out); }
+  .modal:not(.hidden) .modal-card { transform: scale(1); }
   .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 15px; font-weight: 600; color: var(--t1); }
   .modal-head button { background: transparent; border: none; font-size: 16px; color: var(--t3); cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm); }
   .modal-head button:hover { color: var(--t1); background: var(--soft); }
@@ -203,7 +211,7 @@
   .day-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px; }
   .day-row h4 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
   .day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .day-chip { font-size: 12px; padding: 4px 10px; background: var(--soft); border: none; border-radius: var(--r-sm); color: var(--t1); cursor: pointer; transition: all 0.12s; }
+  .day-chip { font-size: 12px; padding: 4px 10px; background: var(--soft); border: none; border-radius: var(--r-sm); color: var(--t1); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
   .day-chip:hover { background: var(--hover); }
 
   /* 采购 / 营养 / 做法 */
@@ -229,7 +237,7 @@
   .side-col { display: flex; flex-direction: column; gap: 16px; }
   .side-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
   .side-title { font-size: 13px; font-weight: 600; color: var(--t1); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-  .side-title button { background: transparent; border: none; font-size: 12px; color: var(--t2); cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); transition: all 0.15s; }
+  .side-title button { background: transparent; border: none; font-size: 12px; color: var(--t2); cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
   .side-title button:hover { color: var(--accent); }
   .profile-empty { font-size: 13px; color: var(--t3); line-height: 1.6; }
   .pf-line { font-size: 13px; margin-bottom: 10px; }
@@ -251,9 +259,21 @@
   #toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px);
     background: var(--t1); color: #fff; padding: 9px 18px; border-radius: 22px; font-size: 13px;
-    opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 99;
+    opacity: 0; pointer-events: none; transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); z-index: 99;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* ========== 按压反馈 ========== */
+  button:active, .chip:active, .scene-pill:active, .day-chip:active {
+    transform: scale(0.97);
+  }
+
+  /* ========== 减弱动效：去掉位移/缩放，保留颜色与透明度反馈 ========== */
+  @media (prefers-reduced-motion: reduce) {
+    .dish-card:hover { transform: none; }
+    #toast, #toast.show { transform: translateX(-50%); }
+    .advanced-toggle .arrow, .disclosure .arrow { transition: none; }
+    button:active, .chip:active, .scene-pill:active, .day-chip:active { transform: none; }
+  }
 </style>
 </head>
 <body>
