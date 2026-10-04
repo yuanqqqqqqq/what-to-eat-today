@@ -33,6 +33,7 @@ class RecommendRequest(BaseModel):
     must_include: list = []
     pantry: list = []
     nutrition_goal: Optional[str] = None
+    scene_id: Optional[str] = None
     seed: Optional[int] = None
 
 
@@ -49,8 +50,9 @@ def index():
 
 @app.get("/api/meta")
 def meta():
-    """返回前端需要的选项列表（忌口/口味/设备）+ 菜谱统计"""
+    """返回前端需要的选项列表（忌口/口味/设备/场景）+ 菜谱统计"""
     from .core.rules import TABOO_RULES, ALLERGY_RULES, DEVICE_RULES, TASTE_RULES
+    from .core.scenes import SCENES
     engine = get_engine()
     return {
         "recipe_count": len(engine.recipes),
@@ -59,6 +61,7 @@ def meta():
         "devices": list(DEVICE_RULES.keys()),
         "tastes": list(TASTE_RULES.keys()),
         "goals": ["均衡", "减脂", "增肌", "控糖"],
+        "scenes": SCENES,
         "llm_configured": LLMClient(**get_llm_config()).available,
     }
 
@@ -113,6 +116,22 @@ def llm_test(req: SettingsRequest):
         return {"ok": False, "message": str(e)}
 
 
+class ModelsRequest(BaseModel):
+    base_url: str = ""
+
+
+@app.post("/api/llm/models")
+def llm_models(req: ModelsRequest):
+    """列出可用模型（仅本地 Ollama 支持 /api/tags），供前端下拉选择。"""
+    cfg = get_llm_config()
+    base_url = req.base_url or cfg.get("base_url", "")
+    llm = LLMClient(base_url=base_url, api_key="", model="")
+    if not llm.is_ollama():
+        return {"ok": True, "ollama": False, "models": [], "message": "当前非本地 Ollama 地址，请手动填写模型名"}
+    models = llm.list_models()
+    return {"ok": True, "ollama": True, "models": models, "message": f"找到 {len(models)} 个本地模型" if models else "未找到模型（Ollama 是否已启动？）"}
+
+
 class WeeklyRequest(BaseModel):
     days: int = 7
     people: int = 3
@@ -128,6 +147,7 @@ class WeeklyRequest(BaseModel):
     must_include: list = []
     pantry: list = []
     nutrition_goal: Optional[str] = None
+    scene_id: Optional[str] = None
     seed: Optional[int] = None
 
 

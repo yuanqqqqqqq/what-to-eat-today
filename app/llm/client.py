@@ -12,9 +12,31 @@ class LLMClient:
         self.api_key = api_key or ""
         self.model = model or ""
 
+    def is_ollama(self) -> bool:
+        """是否为本地 Ollama（无需 api_key）。"""
+        return "ollama" in self.base_url.lower() or ":11434" in self.base_url
+
     @property
     def available(self) -> bool:
-        return bool(self.base_url and self.api_key and self.model)
+        if not (self.base_url and self.model):
+            return False
+        # 本地 Ollama 不需要 api_key
+        if self.is_ollama():
+            return True
+        return bool(self.api_key)
+
+    def list_models(self) -> list:
+        """列出可用模型。仅本地 Ollama 支持（/api/tags），其它返回空列表。"""
+        if not self.base_url or not self.is_ollama():
+            return []
+        try:
+            root = self.base_url.split("/v1")[0] if "/v1" in self.base_url else self.base_url
+            resp = httpx.get(f"{root}/api/tags", timeout=10)
+            resp.raise_for_status()
+            models = resp.json().get("models", [])
+            return [m.get("name") or m.get("model") for m in models if m]
+        except Exception:
+            return []
 
     def chat(self, messages: list, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """非流式对话，返回文本内容。"""

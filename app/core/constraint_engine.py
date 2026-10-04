@@ -10,6 +10,7 @@ import random
 from .rules import (
     TABOO_RULES, ALLERGY_RULES, ingredient_hit, recipe_needs_devices,
 )
+from .scenes import scene_hard_exclude, scene_score
 
 
 class ConstraintEngine:
@@ -29,11 +30,15 @@ class ConstraintEngine:
         max_difficulty = constraints.get("max_difficulty")
         budget = constraints.get("budget")
         exclude_ids = set(constraints.get("exclude_ids") or [])
+        scene_id = constraints.get("scene_id")
 
         pool = []
         for r in self.recipes:
             # 周计划去重：排除已经用过的菜
             if r.get("id") in exclude_ids:
+                continue
+            # 场景硬排除（便当少汤 / 控糖避甜食等）
+            if scene_id and scene_hard_exclude(scene_id, r):
                 continue
             # 忌口"辣"：优先用 LLM 标注的辣度（微辣也算辣）
             if no_spicy and r.get("spiciness") in ("辣", "微辣"):
@@ -107,6 +112,8 @@ class ConstraintEngine:
                     s += 2.0
             if "蛋白" in hint and recipe.get("dish_type") in ("荤", "汤"):
                 s += 1.0
+        # 场景软约束（便当耐放 / 家宴硬菜 / 控糖低 GI / 减脂低热量）
+        s += scene_score(constraints.get("scene_id"), recipe)
         return s
 
     # ---------- 第三步：加权随机 ----------

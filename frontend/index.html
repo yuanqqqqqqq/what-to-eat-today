@@ -51,6 +51,12 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
 .chk-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); margin: 12px 0 0; cursor: pointer; }
 .chk-row input { width: auto; }
+.scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
+.scene-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .15s; background: #fff; }
+.scene-card:hover { border-color: var(--accent); }
+.scene-card.on { border-color: var(--accent); background: #fdf6ec; }
+.scene-card .s-name { font-size: 14px; font-weight: 600; }
+.scene-card .s-desc { font-size: 12px; color: var(--sub); margin-top: 2px; }
 .trace-line { font-size: 12px; color: var(--sub); padding: 3px 0; border-bottom: 1px dashed var(--line); }
 .trace-line b { color: var(--accent); }
 /* 模式切换 */
@@ -135,6 +141,9 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 
       <label class="chk-row" id="graph_row"><input type="checkbox" id="use_graph" checked> 🧠 多 Agent 编排（LangGraph）</label>
 
+      <label style="margin-top:14px">场景模板（一键预设）</label>
+      <div class="scenes" id="scenes"></div>
+
       <div id="days_row" class="hidden">
         <label>安排几天</label>
         <select id="days">
@@ -197,6 +206,10 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
         <label>模型名</label>
         <input type="text" id="model" placeholder="deepseek-chat">
         <div class="settings-row">
+          <button class="btn secondary" id="ollama_setup" style="margin-top:12px">🦙 配置本地 Ollama</button>
+          <select id="ollama_models" style="flex:1;margin-top:12px" disabled><option>拉取本地模型后在此选择</option></select>
+        </div>
+        <div class="settings-row">
           <button class="btn secondary" id="save_llm" style="margin-top:12px">保存</button>
           <button class="btn secondary" id="test_llm" style="margin-top:12px">测试连接</button>
         </div>
@@ -247,6 +260,7 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 <script>
 let META = null;
 let MODE = 'meal';
+let currentScene = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -264,6 +278,7 @@ async function loadMeta() {
   renderChips('allergies', META.allergies);
   renderChips('tastes', META.tastes);
   renderChips('devices', META.devices);
+  renderScenes(META.scenes || []);
   const s = await (await fetch('/api/settings')).json();
   $('base_url').value = s.base_url || '';
   $('api_key').value = s.api_key || '';
@@ -287,6 +302,39 @@ function getChips(id) {
   return [...$(id).querySelectorAll('.chip.on')].map(c => c.textContent);
 }
 
+function renderScenes(scenes) {
+  const el = $('scenes');
+  el.innerHTML = '';
+  scenes.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'scene-card';
+    d.dataset.id = s.id;
+    d.innerHTML = `<div class="s-name">${esc(s.icon)} ${esc(s.name)}</div><div class="s-desc">${esc(s.desc)}</div>`;
+    d.onclick = () => applyScene(s, d);
+    el.appendChild(d);
+  });
+}
+
+function applyScene(s, el) {
+  if (currentScene === s.id) {
+    // 再点一次取消场景
+    currentScene = null;
+    el.classList.remove('on');
+    toast('已取消场景预设');
+    return;
+  }
+  currentScene = s.id;
+  document.querySelectorAll('.scene-card').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  const d = s.defaults || {};
+  if (d.dishes !== undefined) $('dishes').value = d.dishes;
+  if (d.soups !== undefined) $('soups').value = d.soups;
+  if (d.time_budget !== undefined) $('time_budget').value = d.time_budget ?? '';
+  if (d.max_difficulty !== undefined) $('max_difficulty').value = d.max_difficulty ?? '';
+  if (d.nutrition_goal !== undefined) $('nutrition_goal').value = d.nutrition_goal ?? '';
+  toast(`已应用「${s.name}」预设`);
+}
+
 function buildReq() {
   return {
     people: +$('people').value || 1,
@@ -301,6 +349,7 @@ function buildReq() {
     max_difficulty: $('max_difficulty').value ? +$('max_difficulty').value : null,
     pantry: $('pantry').value.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
     nutrition_goal: $('nutrition_goal').value || null,
+    scene_id: currentScene,
     seed: null,
   };
 }
@@ -512,6 +561,24 @@ $('reshuffle').onclick = () => recommend(Math.floor(Math.random()*1e9));
 $('reuse_go').onclick = () => { const v = $('reuse_input').value.trim(); if (v) reuse(v); };
 $('reuse_input').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = $('reuse_input').value.trim(); if (v) reuse(v); } });
 $('refresh_profile').onclick = loadProfile;
+$('ollama_setup').onclick = async () => {
+  $('base_url').value = 'http://localhost:11434/v1';
+  $('api_key').value = '';
+  toast('已填 Ollama 地址（本地模型无需 Key），正在拉取模型…');
+  try {
+    const r = await (await fetch('/api/llm/models', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({base_url:'http://localhost:11434/v1'})})).json();
+    const sel = $('ollama_models');
+    if (r.models && r.models.length) {
+      sel.innerHTML = r.models.map(m => `<option>${esc(m)}</option>`).join('');
+      sel.disabled = false;
+      $('model').value = r.models[0];
+      sel.onchange = () => { $('model').value = sel.value; };
+      toast(`✅ 找到 ${r.models.length} 个本地模型`);
+    } else {
+      toast('❌ ' + (r.message || '未找到模型，请确认 Ollama 已启动'));
+    }
+  } catch (e) { toast('拉取模型失败: ' + e.message); }
+};
 $('save_llm').onclick = async () => {
   const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
   await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
