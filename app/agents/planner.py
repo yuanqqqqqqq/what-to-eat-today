@@ -84,6 +84,9 @@ def generate_plan(constraints: dict, seed: int = None) -> dict:
                   budget, time_budget, devices, max_difficulty, must_include,
                   pantry, nutrition_goal}
     """
+    # seed 优先用参数，否则读 constraints（前端透传）
+    if seed is None:
+        seed = constraints.get("seed")
     engine = get_engine()
     rng = random.Random(seed) if seed is not None else random.Random()
 

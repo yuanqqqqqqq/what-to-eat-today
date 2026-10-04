@@ -59,7 +59,8 @@ def build_shopping_list(menu: list, people: int = 1) -> dict:
     for zone, items in zones.items():
         result.append({"zone": zone, "items": items})
 
-    # 总量估算（粗）：卡路里总和 × 人数系数
+    # 总量估算：各菜成本（食材均价）之和 × 人数系数
+    from .food_db import estimate_meal_cost
     total_kcal = sum(r.get("calories_kcal") or 0 for r in menu)
-    est_cost = round(total_kcal * 0.03 * max(1, people), 1)
+    est_cost = estimate_meal_cost(menu, people)
     return {"zones": result, "total_kcal": total_kcal, "est_cost_yuan": est_cost, "people": people}

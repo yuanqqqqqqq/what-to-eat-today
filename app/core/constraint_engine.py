@@ -11,6 +11,7 @@ from .rules import (
     TABOO_RULES, ALLERGY_RULES, ingredient_hit, recipe_needs_devices,
 )
 from .scenes import scene_hard_exclude, scene_score
+from .food_db import FoodDB, estimate_meal_cost
 
 
 class ConstraintEngine:
@@ -58,11 +59,6 @@ class ConstraintEngine:
             # 难度上限
             if max_difficulty and r.get("difficulty") and r["difficulty"] > max_difficulty:
                 continue
-            # 预算：粗估成本 = 卡路里 * 0.03 元/大卡（MVP 占位，后续接真实价格）
-            if budget and r.get("calories_kcal"):
-                est_cost = r["calories_kcal"] * 0.03
-                if est_cost > budget:
-                    continue
             pool.append(r)
         return pool
 
@@ -160,6 +156,10 @@ class ConstraintEngine:
         if pool_has_meat and len(dish_part) >= 2:
             if not any(r.get("dish_type") == "荤" for r in dish_part):
                 return False
+        # 总预算（整桌，含人数系数）：用食材均价估算，超预算则否决该组合
+        budget = constraints.get("budget")
+        if budget and estimate_meal_cost(combo, constraints.get("people", 1)) > budget:
+            return False
         return True
 
     # ---------- 主入口 ----------
@@ -183,6 +183,8 @@ class ConstraintEngine:
         pool_has_meat = any(r.get("dish_type") == "荤" for r in dish_pool)
 
         best = None
+        best_fallback = None  # 未通过校验时，成本最低的兜底组合
+        best_fallback_cost = None
         for _ in range(max_attempts):
             soups = self.weighted_sample(soup_pool, soups_n, constraints, rng) if soups_n else []
             dishes = self.weighted_sample(dish_pool, dishes_n, constraints, rng) if dishes_n else []
@@ -190,13 +192,19 @@ class ConstraintEngine:
             if self.validate_combo(combo, constraints, pool_has_meat):
                 best = combo
                 break
-            if best is None:
-                best = combo  # 兜底
+            # 兜底：记住成本最低的组合（如预算太紧，返回最接近预算的）
+            cost = sum(FoodDB.estimate_price(r) for r in combo)
+            if best_fallback_cost is None or cost < best_fallback_cost:
+                best_fallback = combo
+                best_fallback_cost = cost
 
+        # 兜底：50 次都没找到完全满足约束的组合时，返回成本最低的那组
+        fallback = best is None and best_fallback is not None
         info = {
             "pool_size": len(pool),
             "soup_pool": len(soup_pool),
             "dish_pool": len(dish_pool),
             "attempts_used": _ + 1,
+            "fallback": fallback,
         }
-        return best or [], info
+        return best or best_fallback or [], info

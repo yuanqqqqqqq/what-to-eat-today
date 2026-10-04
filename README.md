@@ -19,6 +19,7 @@
 - **BYOK**：自带 LLM Key，支持 DeepSeek / GLM / Qwen / Moonshot / Ollama 等所有 OpenAI 兼容接口
 - **零依赖可跑**：不配 LLM 也能完整推荐（规则引擎），配了 Key 则叠加智能搭配说明
 - **372 道中式家常菜**：内置结构化菜谱（难度/耗时/卡路里/原料/用量/分步做法）
+- **真实热量与价格（v0.4）**：热量接中国食物成分表（第 6 版）重算，成本用食材均价估算（替换早期 LLM 估算/卡路里×0.03 占位）
 - **纯本地**：数据全存本地，可完全离线（配 Ollama）
 
 ## 🚀 快速开始
@@ -101,7 +102,8 @@ app/
 │   ├── profile.py             家庭味觉画像（v0.2）
 │   ├── weekly.py              周计划生成器（v0.2）
 │   ├── leftover.py            一菜两吃（v0.2）
-│   └── scenes.py              场景模板（v0.4）
+│   ├── scenes.py              场景模板（v0.4）
+│   └── food_db.py             食物成分表查询 + 热量/价格估算（v0.4）
 ├── agents/
 │   ├── planner.py        方案编排器（规则流水线）
 │   └── orchestrator.py   多 Agent 编排（LangGraph，v0.3）
@@ -114,6 +116,8 @@ frontend/index.html      单文件前端
 ## 📖 数据来源
 
 菜谱数据来自 [Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（Unlicense，公共领域），经 `scripts/parse_recipes.py` 解析为结构化 JSON。
+
+热量数据来自 [中国食物成分表（第 6 版）](https://github.com/Sanotsu/china-food-composition-data)，由 `scripts/download_food_composition.py` 下载合并为 `data/food_composition.json`，再由 `scripts/recalc_calories.py` 按"主料密度 × 用量"重算每道菜热量。
 
 ## 🗺️ 路线图
 

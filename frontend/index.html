@@ -426,7 +426,9 @@ function renderMeal(d) {
   $('pairing').classList.remove('hidden');
   $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
   $('menu').innerHTML = d.menu.map(menuItemHTML).join('');
-  renderShopping(d.shopping, `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`);
+  let costText = `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`;
+  if (d.info && d.info.fallback) costText += ' ⚠️ 约束太紧，已给最接近的方案';
+  renderShopping(d.shopping, costText);
   renderNutrition(d.nutrition);
   renderSteps(d.menu);
 }
