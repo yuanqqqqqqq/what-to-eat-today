@@ -13,6 +13,7 @@
 - **周计划（v0.2）**：一次生成 N 天菜单，全程不重样，自动合并整周采购清单
 - **家庭味觉画像（v0.2）**：点 👍/👎 记口味，沉淀爱吃的口味/食材/菜，反哺推荐打分
 - **一菜两吃（v0.2）**：输入剩菜名，复用其实质主料，推荐二次加工做法
+- **多 Agent 编排（v0.3）**：LangGraph 四角色工作流，营养师不达标自动回退给规划师重选
 - **BYOK**：自带 LLM Key，支持 DeepSeek / GLM / Qwen / Moonshot / Ollama 等所有 OpenAI 兼容接口
 - **零依赖可跑**：不配 LLM 也能完整推荐（规则引擎），配了 Key 则叠加智能搭配说明
 - **372 道中式家常菜**：内置结构化菜谱（难度/耗时/卡路里/原料/用量/分步做法）
@@ -64,6 +65,26 @@ uvicorn app.main:app --reload
 完整方案 JSON → 前端渲染
 ```
 
+## 🤖 多 Agent 编排（v0.3）
+
+用 LangGraph 把"规则流水线"升级为"有状态、可回退"的多 Agent 工作流：
+
+```
+规划师(planner) → 营养师(nutritionist) ──不达标且未超轮次──┐
+        ▲             │ 达标                    │
+        │             ▼                         │
+        └─────── 采购员(shopper) → 搭配师(writer) │
+                          └──────────────────────┘
+```
+
+- **规划师**：约束引擎出菜单
+- **营养师**：营养分析 + 达标评估（规则版，可复现）
+- **条件路由**：不达标（缺蔬菜/热量偏高/蛋白质偏少）→ 回退规划师重选（最多 3 轮）
+- **采购师 / 搭配师**：清单合并 / 搭配文案（LLM 优先，无 Key 用模板）
+
+每个节点无 LLM 也能跑通（BYOK 友好）。返回结果带 `agent_trace`，前端可展开查看编排过程。
+接口：`POST /api/plan/graph`（单餐多 Agent），`POST /api/recommend`（经典流水线）。
+
 ## 📦 项目结构
 
 ```
@@ -78,7 +99,9 @@ app/
 │   ├── profile.py             家庭味觉画像（v0.2）
 │   ├── weekly.py              周计划生成器（v0.2）
 │   └── leftover.py            一菜两吃（v0.2）
-├── agents/planner.py    方案编排器
+├── agents/
+│   ├── planner.py        方案编排器（规则流水线）
+│   └── orchestrator.py   多 Agent 编排（LangGraph，v0.3）
 └── llm/client.py        OpenAI 兼容客户端
 data/recipes.json        372 道结构化菜谱
 scripts/                 HowToCook 下载器 + 解析器
@@ -93,7 +116,7 @@ frontend/index.html      单文件前端
 
 - [x] v0.1 单餐闭环：约束内随机 + 372 道菜 + 采购清单 + 做法
 - [x] v0.2 周计划 + 家庭味觉画像 + 一菜两吃
-- [ ] v0.3 多 Agent 真编排（LangGraph）
+- [x] v0.3 多 Agent 真编排（LangGraph）
 - [ ] v0.4 场景模板（便当/家宴/控糖）+ 本地模型完整支持
 
 ## 📄 协议

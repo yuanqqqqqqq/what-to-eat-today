@@ -49,6 +49,10 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 }
 .btn:hover { opacity: .9; }
 .btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
+.chk-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); margin: 12px 0 0; cursor: pointer; }
+.chk-row input { width: auto; }
+.trace-line { font-size: 12px; color: var(--sub); padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.trace-line b { color: var(--accent); }
 /* 模式切换 */
 .seg { display: flex; background: #f3ede4; border-radius: 10px; padding: 4px; margin-bottom: 4px; }
 .seg button { flex: 1; padding: 8px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; color: var(--sub); }
@@ -129,6 +133,8 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
         <button data-mode="weekly">一周菜单</button>
       </div>
 
+      <label class="chk-row" id="graph_row"><input type="checkbox" id="use_graph" checked> 🧠 多 Agent 编排（LangGraph）</label>
+
       <div id="days_row" class="hidden">
         <label>安排几天</label>
         <select id="days">
@@ -207,6 +213,10 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 
       <div id="result" class="card hidden">
         <h2 id="result_title">今日餐桌方案</h2>
+        <details id="trace_wrap" class="hidden" style="margin-bottom:12px">
+          <summary>🔎 查看多 Agent 编排过程</summary>
+          <div id="trace" style="margin-top:8px"></div>
+        </details>
         <div class="pairing" id="pairing"></div>
         <div id="menu"></div>
         <h2 style="margin-top:20px">🧺 合并采购清单 <span style="font-size:12px;color:var(--sub)" id="cost"></span></h2>
@@ -343,6 +353,12 @@ function renderNutrition(n) {
     ${n.tips.map(t => `<div class="tips">💡 ${esc(t)}</div>`).join('')}`;
 }
 
+function renderTrace(trace) {
+  if (!trace || !trace.length) { $('trace_wrap').classList.add('hidden'); return; }
+  $('trace_wrap').classList.remove('hidden');
+  $('trace').innerHTML = trace.map(t => `<div class="trace-line"><b>${esc(t.agent)}</b>：${esc(t.note)}</div>`).join('');
+}
+
 function renderSteps(menu) {
   $('steps').innerHTML = menu.map(r => `
     <div class="menu-item">
@@ -357,6 +373,7 @@ function renderSteps(menu) {
 }
 
 function renderMeal(d) {
+  renderTrace(d.agent_trace);
   $('pairing').classList.remove('hidden');
   $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
   $('menu').innerHTML = d.menu.map(menuItemHTML).join('');
@@ -366,6 +383,7 @@ function renderMeal(d) {
 }
 
 function renderWeekly(d) {
+  renderTrace(d.agent_trace);
   $('pairing').classList.add('hidden');
   const s = d.summary;
   $('menu').innerHTML = `
@@ -404,6 +422,7 @@ async function recommend(seed) {
   req.seed = seed;
   try {
     let url = '/api/recommend', body = req;
+    if (MODE === 'meal' && $('use_graph').checked) url = '/api/plan/graph';
     if (MODE === 'weekly') {
       url = '/api/weekly';
       body = Object.assign({}, req, { days: +$('days').value || 7 });
@@ -475,6 +494,7 @@ $('mode_seg').addEventListener('click', e => {
   b.classList.add('on');
   MODE = b.dataset.mode;
   $('days_row').classList.toggle('hidden', MODE !== 'weekly');
+  $('graph_row').classList.toggle('hidden', MODE !== 'meal');
   $('result').classList.add('hidden');
 });
 

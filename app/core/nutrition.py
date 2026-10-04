@@ -49,3 +49,30 @@ def analyze(menu: list, people: int = 1, goal: str = None) -> dict:
         "tips": tips,
         "goal": goal,
     }
+
+
+def assess(menu: list, nutrition: dict, goal: str = None) -> list:
+    """
+    营养达标评估：返回未达标的问题列表（空 = 达标）。
+    供多 Agent 编排里的"营养师"节点用：有问题则回退给规划师重新出菜单。
+    """
+    issues = []
+    total = nutrition.get("total_kcal") or 0
+    if goal == "减脂":
+        if nutrition.get("per_person_kcal", 0) > 600:
+            issues.append("热量偏高")
+        if nutrition.get("veg_count", 0) == 0:
+            issues.append("缺蔬菜")
+    elif goal == "增肌":
+        if nutrition.get("protein_kcal", 0) < total * 0.25:
+            issues.append("蛋白质偏少")
+    elif goal == "均衡":
+        if nutrition.get("veg_count", 0) == 0:
+            issues.append("缺蔬菜")
+        if nutrition.get("meat_count", 0) == 0:
+            issues.append("缺优质蛋白")
+    # 通用：有荤却完全没蔬菜，始终提醒（除非本来就没点菜/汤之外的）
+    has_meat = any(r.get("dish_type") == "荤" for r in menu)
+    if has_meat and nutrition.get("veg_count", 0) == 0 and "缺蔬菜" not in issues:
+        issues.append("缺蔬菜")
+    return issues

@@ -96,6 +96,17 @@ class ConstraintEngine:
         profile = constraints.get("profile")
         if profile is not None:
             s += profile.score_recipe(recipe)
+        # 营养师回退反馈（软约束）：如"缺蔬菜"给素菜加分，"热量偏高"给低热量菜加分
+        hint = constraints.get("retry_hint") or ""
+        if hint:
+            if ("蔬菜" in hint or "素" in hint) and recipe.get("dish_type") == "素":
+                s += 2.0
+            if "热量" in hint or "清淡" in hint:
+                kcal = recipe.get("calories_kcal") or 0
+                if 0 < kcal <= 200:
+                    s += 2.0
+            if "蛋白" in hint and recipe.get("dish_type") in ("荤", "汤"):
+                s += 1.0
         return s
 
     # ---------- 第三步：加权随机 ----------

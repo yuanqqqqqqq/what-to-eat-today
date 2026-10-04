@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .agents.planner import generate_plan, generate_weekly, get_engine, reuse_plan
+from .agents.orchestrator import orchestrate
 from .config import get_llm_config, save_llm_config
 from .core.profile import TasteProfile
 from .llm.client import LLMClient
@@ -70,6 +71,16 @@ def recommend(req: RecommendRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return plan
+
+
+@app.post("/api/plan/graph")
+def plan_graph(req: RecommendRequest):
+    """多 Agent 编排（LangGraph）：规划师 → 营养师(可回退) → 采购员 → 搭配师。"""
+    constraints = req.model_dump()
+    try:
+        return orchestrate(constraints, seed=req.seed)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/settings")
