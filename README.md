@@ -65,7 +65,19 @@ build.bat   # 生成 dist\今天吃什么.exe
 
 双击 `今天吃什么.exe` 即可使用（自动打开浏览器）。用户数据（自定义菜谱/价格/常备食材）存在 exe 旁边的 `data\` 目录。
 
-首次使用：打开页面 → 点"⚙️ LLM 设置"填入你的 `base_url / api_key / model`（不填也能用，只是没有智能搭配说明）。
+### 接入 LLM（可选）
+
+不接 LLM 也能完整使用（纯规则推荐）。接上后，搭配说明会从模板变成更智能的文案。
+
+**接入位置**：打开页面 → 点「高级配置」→ 拉到最下面「LLM 设置」，填入 `Base URL / API Key / 模型`，点「保存」再点「测试连接」。
+
+支持 DeepSeek / GLM / Qwen / Moonshot / Ollama 等所有 OpenAI 兼容接口。以 DeepSeek 为例：
+
+- Base URL：`https://api.deepseek.com/v1`
+- API Key：你的 `sk-...`
+- 模型：`deepseek-chat`
+
+也可以直接编辑 `.env`（`LLM_BASE_URL / LLM_API_KEY / LLM_MODEL`）。
 
 ## 🧠 约束内随机引擎（产品灵魂）
 

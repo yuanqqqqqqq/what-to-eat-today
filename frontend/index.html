@@ -520,6 +520,28 @@
         <label class="adv-label">家里现有食材（优先消耗，逗号分隔）</label>
         <div class="adv-row"><div class="field" style="min-width:280px"><input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿"></div></div>
       </div>
+      <div class="adv-group">
+        <label class="adv-label">LLM 设置（可选，接入后搭配说明更智能）</label>
+        <div class="adv-row">
+          <div class="field" style="min-width:200px">
+            <label>Base URL</label>
+            <input type="text" id="llmBaseUrl" placeholder="如 https://api.deepseek.com/v1">
+          </div>
+          <div class="field" style="min-width:200px">
+            <label>API Key</label>
+            <input type="text" id="llmApiKey" placeholder="sk-...">
+          </div>
+          <div class="field" style="min-width:140px">
+            <label>模型</label>
+            <input type="text" id="llmModel" placeholder="如 deepseek-chat">
+          </div>
+        </div>
+        <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+          <button class="head-btn" id="llmSave">保存</button>
+          <button class="head-btn" id="llmTest">测试连接</button>
+          <span id="llmStatus" style="font-size:12px; color:var(--t2);"></span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1197,12 +1219,45 @@ $('searchResults').addEventListener('click', e => {
   if (r) openRecipe(r.dataset.id);
 });
 
+/* ---------- LLM 设置 ---------- */
+async function loadLlmConfig() {
+  try {
+    const c = await (await fetch('/api/settings')).json();
+    $('llmBaseUrl').value = c.base_url || '';
+    $('llmApiKey').value = c.api_key || '';
+    $('llmModel').value = c.model || '';
+  } catch (e) {}
+}
+async function saveLlmConfig() {
+  try {
+    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      base_url: $('llmBaseUrl').value.trim(), api_key: $('llmApiKey').value.trim(), model: $('llmModel').value.trim(),
+    }) });
+    $('llmStatus').textContent = '已保存';
+    $('llmStatus').style.color = 'var(--accent)';
+  } catch (e) { $('llmStatus').textContent = '保存失败'; $('llmStatus').style.color = 'var(--t1)'; }
+}
+async function testLlm() {
+  $('llmStatus').textContent = '测试中…';
+  $('llmStatus').style.color = 'var(--t2)';
+  try {
+    const r = await (await fetch('/api/llm/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      base_url: $('llmBaseUrl').value.trim(), api_key: $('llmApiKey').value.trim(), model: $('llmModel').value.trim(),
+    }) })).json();
+    $('llmStatus').textContent = r.ok ? ('✓ ' + r.message) : ('✗ ' + r.message);
+    $('llmStatus').style.color = r.ok ? 'var(--accent)' : 'var(--t1)';
+  } catch (e) { $('llmStatus').textContent = '✗ 测试失败'; $('llmStatus').style.color = 'var(--t1)'; }
+}
+$('llmSave').onclick = saveLlmConfig;
+$('llmTest').onclick = testLlm;
+
 /* ---------- 初始化 ---------- */
 bindCounter('peopleCounter', 1, 20);
 bindCounter('dishCounter', 0, 10);
 bindCounter('soupCounter', 0, 5);
 bindCounter('dayCounter', 3, 14);
 loadMeta();
+loadLlmConfig();
 loadPantry();
 loadPrices();
 renderFavorites();
