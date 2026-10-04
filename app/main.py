@@ -9,8 +9,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .agents.planner import generate_plan, get_engine
+from .agents.planner import generate_plan, generate_weekly, get_engine, reuse_plan
 from .config import get_llm_config, save_llm_config
+from .core.profile import TasteProfile
 from .llm.client import LLMClient
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -99,6 +100,66 @@ def llm_test(req: SettingsRequest):
         return {"ok": True, "message": reply.strip()}
     except Exception as e:
         return {"ok": False, "message": str(e)}
+
+
+class WeeklyRequest(BaseModel):
+    days: int = 7
+    people: int = 3
+    dishes: int = 2
+    soups: int = 1
+    taboos: list = []
+    allergies: list = []
+    taste_prefs: list = []
+    budget: Optional[float] = None
+    time_budget: Optional[int] = None
+    devices: list = []
+    max_difficulty: Optional[int] = None
+    must_include: list = []
+    pantry: list = []
+    nutrition_goal: Optional[str] = None
+    seed: Optional[int] = None
+
+
+class FeedbackRequest(BaseModel):
+    recipe_id: str
+    feedback: int  # 1 喜欢 / -1 不喜欢
+
+
+class ReuseRequest(BaseModel):
+    recipe_name: str
+    n: int = 3
+
+
+@app.post("/api/weekly")
+def weekly(req: WeeklyRequest):
+    constraints = req.model_dump()
+    days = constraints.pop("days", 7)
+    try:
+        plan = generate_weekly(constraints, days=days, seed=req.seed)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return plan
+
+
+@app.post("/api/feedback")
+def feedback(req: FeedbackRequest):
+    engine = get_engine()
+    recipe = next((r for r in engine.recipes if r.get("id") == req.recipe_id), None)
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="菜谱不存在")
+    profile = TasteProfile()
+    profile.record(recipe, 1 if req.feedback > 0 else -1)
+    return {"ok": True, "profile": profile.summary()}
+
+
+@app.get("/api/profile")
+def profile_get():
+    return TasteProfile().summary()
+
+
+@app.post("/api/leftover")
+def leftover(req: ReuseRequest):
+    return reuse_plan(req.recipe_name, n=req.n)
 
 
 # 静态资源（如有额外 js/css 可放 frontend 下）

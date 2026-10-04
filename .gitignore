@@ -1,6 +1,7 @@
 # 忽略用户私有数据与环境
 .env
 data/settings.json
+data/profile.json
 data/raw/
 data/raw/*.tar.gz
 data/raw/*.json

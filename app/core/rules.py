@@ -80,3 +80,31 @@ def taste_keywords(prefs):
     for p in prefs:
         kws.update(TASTE_RULES.get(p, []))
     return kws
+
+
+# ---------- 调料/葱姜蒜过滤（供画像、一菜两吃复用）----------
+# 含这些词根的食材属于调料/香料，不作为"实质主料"参与偏好沉淀或复用匹配
+SEASONING_ROOTS = (
+    "盐", "糖", "油", "酱油", "醋", "酒", "蚝油", "豆瓣", "花椒", "胡椒",
+    "辣椒", "辣", "淀粉", "生粉", "味精", "鸡精", "五香", "孜然", "芝麻",
+    "葱", "洋葱", "姜", "蒜", "香菜", "蜂蜜", "番茄酱", "沙拉", "芥末",
+    "八角", "桂皮", "香叶", "草果", "酱", "汁", "露", "水", "抽", "豉",
+)
+# 含"粉"但属于主食/可复用（非调料粉）
+STARCH_NOUNS = ("粉丝", "米粉", "河粉", "凉粉", "粉条", "粉皮", "通心粉")
+
+
+def is_substantive_ingredient(name: str) -> bool:
+    """是否为实质主料（非调料/葱姜蒜）。"""
+    if name in STARCH_NOUNS:
+        return True
+    return not any(root in name for root in SEASONING_ROOTS)
+
+
+def substantive_ingredients(names: list) -> list:
+    """过滤调料/葱姜蒜，返回实质主料列表（保持原顺序、去重）。"""
+    out = []
+    for n in names:
+        if n and n not in out and is_substantive_ingredient(n):
+            out.append(n)
+    return out

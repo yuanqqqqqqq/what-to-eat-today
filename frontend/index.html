@@ -49,8 +49,12 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 }
 .btn:hover { opacity: .9; }
 .btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
+/* 模式切换 */
+.seg { display: flex; background: #f3ede4; border-radius: 10px; padding: 4px; margin-bottom: 4px; }
+.seg button { flex: 1; padding: 8px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; color: var(--sub); }
+.seg button.on { background: #fff; color: var(--accent); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 .menu-item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-.menu-item h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.menu-item h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f3ede4; color: var(--sub); }
 .tag.meat { background: #fbe4e0; color: #c04a3a; }
 .tag.veg { background: #e3f0e3; color: var(--accent2); }
@@ -59,6 +63,10 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .tag.mild { background: #fdeed9; color: #d97a1f; }
 .tag.plain { background: #e3f0e3; color: #4a8f4a; }
 .menu-item .meta { font-size: 12px; color: var(--sub); margin-top: 6px; }
+.item-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.item-actions button { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--sub); transition: all .15s; }
+.item-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.item-actions button.fb.done { background: #f3ede4; border-color: var(--accent); }
 .pairing { background: #fdf6ec; border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
 .zone { margin-bottom: 12px; }
 .zone h4 { font-size: 13px; color: var(--accent2); margin-bottom: 6px; }
@@ -83,6 +91,25 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 details { margin-top: 8px; }
 summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 .spin { text-align: center; color: var(--sub); padding: 30px; font-size: 14px; }
+/* 周计划 */
+.day-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.day-card h3 { font-size: 15px; color: var(--accent); margin-bottom: 8px; }
+.day-card .day-menu { display: flex; flex-wrap: wrap; gap: 8px; }
+.day-chip { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.day-chip:hover { border-color: var(--accent); }
+.week-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; margin-bottom: 16px; color: var(--sub); }
+.week-summary b { color: var(--ink); }
+/* 画像 / 再利用 */
+.profile-block { font-size: 13px; }
+.profile-block .pf-line { margin: 6px 0; }
+.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pf-chip { font-size: 12px; padding: 3px 10px; border-radius: 12px; background: #f3ede4; }
+.pf-chip.avoid { background: #fbe4e0; color: #c04a3a; }
+.reuse-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.reuse-item h4 { font-size: 14px; color: var(--accent); }
+.reuse-item .how { font-size: 13px; color: var(--sub); margin-top: 4px; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2d2a26; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 99; }
+#toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -95,7 +122,24 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
   <div class="grid">
     <!-- 左：输入表单 -->
     <div class="card">
-      <h2>今天怎么吃？</h2>
+      <h2>怎么吃？</h2>
+
+      <div class="seg" id="mode_seg">
+        <button class="on" data-mode="meal">今日一餐</button>
+        <button data-mode="weekly">一周菜单</button>
+      </div>
+
+      <div id="days_row" class="hidden">
+        <label>安排几天</label>
+        <select id="days">
+          <option value="3">3 天</option>
+          <option value="5">5 天</option>
+          <option value="7" selected>7 天</option>
+          <option value="10">10 天</option>
+          <option value="14">14 天</option>
+        </select>
+      </div>
+
       <div class="row2">
         <div><label>人数</label><input type="number" id="people" value="3" min="1" max="20"></div>
         <div><label>几菜几汤</label>
@@ -156,8 +200,13 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
 
     <!-- 右：结果 -->
     <div>
+      <div class="card" id="profile_card">
+        <h2>👤 家庭味觉画像 <button class="btn secondary" id="refresh_profile" style="width:auto;margin:0;padding:2px 10px;font-size:12px;float:right">刷新</button></h2>
+        <div id="profile_body" class="profile-block">加载中…</div>
+      </div>
+
       <div id="result" class="card hidden">
-        <h2>今日餐桌方案</h2>
+        <h2 id="result_title">今日餐桌方案</h2>
         <div class="pairing" id="pairing"></div>
         <div id="menu"></div>
         <h2 style="margin-top:20px">🧺 合并采购清单 <span style="font-size:12px;color:var(--sub)" id="cost"></span></h2>
@@ -167,14 +216,36 @@ summary { cursor: pointer; color: var(--accent); font-size: 13px; }
         <h2 style="margin-top:20px">👨‍🍳 分步做法</h2>
         <div id="steps"></div>
       </div>
+
       <div id="loading" class="card spin hidden">正在为你搭配…</div>
+
+      <div class="card" id="reuse_card">
+        <h2>♻️ 剩菜再利用（一菜两吃）</h2>
+        <div class="settings-row">
+          <input type="text" id="reuse_input" placeholder="输入剩的菜名，如：回锅肉">
+          <button class="btn" id="reuse_go" style="margin:0;width:auto;padding:9px 16px">找做法</button>
+        </div>
+        <div class="setting-hint">昨天剩了菜？点上方菜单卡里的"♻️ 剩了怎么再加工"，或直接输入菜名。</div>
+        <div id="reuse_result" style="margin-top:12px"></div>
+      </div>
     </div>
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
 let META = null;
+let MODE = 'meal';
 const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
 
 async function loadMeta() {
   const r = await fetch('/api/meta');
@@ -183,11 +254,11 @@ async function loadMeta() {
   renderChips('allergies', META.allergies);
   renderChips('tastes', META.tastes);
   renderChips('devices', META.devices);
-  // 加载已保存的 LLM 配置
   const s = await (await fetch('/api/settings')).json();
   $('base_url').value = s.base_url || '';
   $('api_key').value = s.api_key || '';
   $('model').value = s.model || '';
+  loadProfile();
 }
 
 function renderChips(id, items) {
@@ -224,6 +295,107 @@ function buildReq() {
   };
 }
 
+function typeClass(t) {
+  if (t === '荤') return 'meat';
+  if (t === '素') return 'veg';
+  if (t === '汤') return 'soup';
+  return '';
+}
+function spiceClass(s) {
+  if (s === '辣') return 'spicy';
+  if (s === '微辣') return 'mild';
+  return 'plain';
+}
+
+function menuItemHTML(r) {
+  return `
+    <div class="menu-item" data-id="${esc(r.id)}" data-name="${esc(r.name)}">
+      <h3>${esc(r.name)}
+        <span class="tag ${typeClass(r.dish_type)}">${esc(r.dish_type||'')}</span>
+        ${r.spiciness ? `<span class="tag ${spiceClass(r.spiciness)}">${esc(r.spiciness)}</span>` : ''}
+      </h3>
+      <div class="meta">${(r.taste||[]).join('/')} · 时令${esc(r.season||'四季')} · 难度 ${'★'.repeat(r.difficulty||0)} · ${r.estimated_minutes ? r.estimated_minutes+' 分钟' : '耗时未知'} · ${r.calories_kcal} 大卡</div>
+      <div class="item-actions">
+        <button class="fb" data-id="${esc(r.id)}" data-v="1">👍 喜欢</button>
+        <button class="fb" data-id="${esc(r.id)}" data-v="-1">👎 不喜欢</button>
+        <button class="reuse-link" data-name="${esc(r.name)}">♻️ 剩了怎么再加工</button>
+      </div>
+    </div>`;
+}
+
+function renderShopping(shopping, costText) {
+  let html = shopping.zones.map(z => `
+    <div class="zone"><h4>${esc(z.zone)}区</h4><ul>
+      ${z.items.map(it => `<li>${esc(it.name)}${it.optional?' <span class="amt">(可选)</span>':''} <span class="amt">${it.amount ? '· '+esc(it.amount) : ''} ${it.used_by.length>1 ? '· 共'+it.used_by.length+'道菜用' : ''}</span></li>`).join('')}
+    </ul></div>`).join('');
+  if (costText) $('cost').textContent = costText;
+  $('shopping').innerHTML = html;
+}
+
+function renderNutrition(n) {
+  $('nutrition').innerHTML = `
+    <div class="nutri">
+      <span><span class="k">总热量</span> <span class="v">${n.total_kcal}</span> 大卡</span>
+      <span><span class="k">人均</span> <span class="v">${n.per_person_kcal}</span> 大卡</span>
+      <span><span class="k">荤/素/汤</span> <span class="v">${n.meat_count}/${n.veg_count}/${n.soup_count}</span></span>
+      <span><span class="k">蛋白:脂:碳</span> <span class="v">${n.protein_kcal}:${n.fat_kcal}:${n.carb_kcal}</span> 大卡</span>
+    </div>
+    ${n.tips.map(t => `<div class="tips">💡 ${esc(t)}</div>`).join('')}`;
+}
+
+function renderSteps(menu) {
+  $('steps').innerHTML = menu.map(r => `
+    <div class="menu-item">
+      <h3>${esc(r.name)}</h3>
+      ${(r.steps||[]).map(g => `
+        <div class="steps-group">
+          ${g.group ? `<h4>${esc(g.group)}</h4>` : ''}
+          <ol>${g.steps.map(s => `<li>${esc(s.text)}${s.sub.length ? '<ul class="sub">'+s.sub.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>' : ''}</li>`).join('')}</ol>
+        </div>`).join('')}
+      ${(r.tips||[]).length ? `<div class="tips">💡 ${r.tips.map(esc).join('；')}</div>` : ''}
+    </div>`).join('');
+}
+
+function renderMeal(d) {
+  $('pairing').classList.remove('hidden');
+  $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
+  $('menu').innerHTML = d.menu.map(menuItemHTML).join('');
+  renderShopping(d.shopping, `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`);
+  renderNutrition(d.nutrition);
+  renderSteps(d.menu);
+}
+
+function renderWeekly(d) {
+  $('pairing').classList.add('hidden');
+  const s = d.summary;
+  $('menu').innerHTML = `
+    <div class="week-summary">
+      <span>共 <b>${s.days}</b> 天 · <b>${s.total_dishes}</b> 道菜（<b>${s.unique_dishes}</b> 道不重样）</span>
+      <span>荤 <b>${s.meat}</b> · 素 <b>${s.veg}</b> · 汤 <b>${s.soup}</b></span>
+      <span>估算总价约 <b>${s.est_cost_yuan}</b> 元</span>
+    </div>
+    ${d.days.map(day => `
+      <div class="day-card">
+        <h3>第 ${day.day} 天</h3>
+        <div class="day-menu">
+          ${day.menu.length ? day.menu.map(r => `<span class="day-chip" data-name="${esc(r.name)}" title="点我看做法 / 再加工">${esc(r.name)}</span>`).join('') : `<span class="tips">${esc(day.error||'无结果')}</span>`}
+        </div>
+      </div>`).join('')}`;
+
+  renderShopping(d.week_shopping, `（整周估算总价约 ${d.week_shopping.est_cost_yuan} 元 / ${d.week_shopping.people} 人）`);
+  // 营养：周人均
+  const total = s.total_kcal || 0;
+  $('nutrition').innerHTML = `
+    <div class="nutri">
+      <span><span class="k">整周总热量</span> <span class="v">${total}</span> 大卡</span>
+      <span><span class="k">日均</span> <span class="v">${Math.round(total / Math.max(1, s.days))}</span> 大卡</span>
+      <span><span class="k">荤/素/汤</span> <span class="v">${s.meat}/${s.veg}/${s.soup}</span></span>
+    </div>
+    <div class="tips">💡 每天可点开菜名查看做法；点 ♻️ 卡输入任一菜名看二次加工。</div>`;
+  // 隐藏单餐做法区
+  $('steps').innerHTML = '';
+}
+
 async function recommend(seed) {
   $('error').textContent = '';
   $('loading').classList.remove('hidden');
@@ -231,12 +403,16 @@ async function recommend(seed) {
   const req = buildReq();
   req.seed = seed;
   try {
-    const r = await fetch('/api/recommend', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(req)
-    });
+    let url = '/api/recommend', body = req;
+    if (MODE === 'weekly') {
+      url = '/api/weekly';
+      body = Object.assign({}, req, { days: +$('days').value || 7 });
+    }
+    const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await r.json();
-    if (!data.ok) { $('error').textContent = data.error || '无结果'; return; }
-    render(data);
+    if (data.ok === false) { $('error').textContent = data.error || '无结果'; return; }
+    $('result_title').textContent = MODE === 'weekly' ? '📅 一周菜单计划' : '今日餐桌方案';
+    if (MODE === 'weekly') renderWeekly(data); else renderMeal(data);
   } catch (e) {
     $('error').textContent = '请求失败: ' + e.message;
   } finally {
@@ -245,69 +421,86 @@ async function recommend(seed) {
   }
 }
 
-function typeClass(t) {
-  if (t === '荤') return 'meat';
-  if (t === '素') return 'veg';
-  if (t === '汤') return 'soup';
-  return '';
+// ---- 味觉画像 ----
+async function loadProfile() {
+  try {
+    const p = await (await fetch('/api/profile')).json();
+    renderProfile(p);
+  } catch (e) { $('profile_body').textContent = '加载失败'; }
 }
 
-function spiceClass(s) {
-  if (s === '辣') return 'spicy';
-  if (s === '微辣') return 'mild';
-  return 'plain';
+function renderProfile(p) {
+  if (!p.count) {
+    $('profile_body').innerHTML = `<div class="tips">还没记录过。点菜卡上的 👍 / 👎，慢慢积累属于你家的口味画像。</div>`;
+    return;
+  }
+  const chips = (arr, cls='') => arr.length ? arr.map(x => `<span class="pf-chip ${cls}">${esc(x.name)} <i>${x.score>0?'+':''}${x.score}</i></span>`).join('') : '<span class="pf-chip">暂无</span>';
+  $('profile_body').innerHTML = `
+    <div class="pf-line">已记录 <b>${p.count}</b> 次反馈</div>
+    <div class="pf-line">❤️ 爱吃的口味：<div class="pf-chips">${chips(p.top_tastes)}</div></div>
+    <div class="pf-line">🥬 偏爱食材：<div class="pf-chips">${chips(p.top_ingredients)}</div></div>
+    <div class="pf-line">🚫 想避开：<div class="pf-chips">${chips(p.avoid_ingredients,'avoid')}</div></div>
+    <div class="pf-line">⭐ 常点爱吃的菜：<div class="pf-chips">${chips(p.top_dishes)}</div></div>`;
 }
 
-function render(d) {
-  $('pairing').textContent = (d.llm_used ? '🤖 ' : '') + d.pairing_note;
-  $('menu').innerHTML = d.menu.map(r => `
-    <div class="menu-item">
-      <h3>${r.name}
-        <span class="tag ${typeClass(r.dish_type)}">${r.dish_type||''}</span>
-        ${r.spiciness ? `<span class="tag ${spiceClass(r.spiciness)}">${r.spiciness}</span>` : ''}
-      </h3>
-      <div class="meta">${(r.taste||[]).join('/')} · 时令${r.season||'四季'} · 难度 ${'★'.repeat(r.difficulty||0)} · ${r.estimated_minutes ? r.estimated_minutes+' 分钟' : '耗时未知'} · ${r.calories_kcal} 大卡</div>
-    </div>`).join('');
-
-  $('cost').textContent = `（估算总价约 ${d.shopping.est_cost_yuan} 元 / ${d.shopping.people} 人）`;
-  $('shopping').innerHTML = d.shopping.zones.map(z => `
-    <div class="zone"><h4>${z.zone}区</h4><ul>
-      ${z.items.map(it => `<li>${it.name}${it.optional?' <span class="amt">(可选)</span>':''} <span class="amt">${it.amount ? '· '+it.amount : ''} ${it.used_by.length>1 ? '· 共'+it.used_by.length+'道菜用' : ''}</span></li>`).join('')}
-    </ul></div>`).join('');
-
-  const n = d.nutrition;
-  $('nutrition').innerHTML = `
-    <div class="nutri">
-      <span><span class="k">总热量</span> <span class="v">${n.total_kcal}</span> 大卡</span>
-      <span><span class="k">人均</span> <span class="v">${n.per_person_kcal}</span> 大卡</span>
-      <span><span class="k">荤/素/汤</span> <span class="v">${n.meat_count}/${n.veg_count}/${n.soup_count}</span></span>
-      <span><span class="k">蛋白:脂:碳</span> <span class="v">${n.protein_kcal}:${n.fat_kcal}:${n.carb_kcal}</span> 大卡</span>
-    </div>
-    ${n.tips.map(t => `<div class="tips">💡 ${t}</div>`).join('')}`;
-
-  $('steps').innerHTML = d.menu.map(r => `
-    <div class="menu-item">
-      <h3>${r.name}</h3>
-      ${(r.steps||[]).map(g => `
-        <div class="steps-group">
-          ${g.group ? `<h4>${g.group}</h4>` : ''}
-          <ol>${g.steps.map(s => `<li>${s.text}${s.sub.length ? '<ul class="sub">'+s.sub.map(x=>`<li>${x}</li>`).join('')+'</ul>' : ''}</li>`).join('')}</ol>
-        </div>`).join('')}
-      ${(r.tips||[]).length ? `<div class="tips">💡 ${r.tips.join('；')}</div>` : ''}
-    </div>`).join('');
+async function sendFeedback(id, v) {
+  try {
+    const r = await (await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({recipe_id:id, feedback:v}) })).json();
+    if (r.ok) { toast(v>0 ? '👍 已记住：喜欢这道' : '👎 已记住：不喜欢这道'); loadProfile(); }
+  } catch (e) { toast('反馈失败'); }
 }
+
+// ---- 剩菜再利用 ----
+async function reuse(name) {
+  $('reuse_input').value = name;
+  const el = $('reuse_result');
+  el.innerHTML = '<div class="spin">正在找二次加工做法…</div>';
+  try {
+    const d = await (await fetch('/api/leftover', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({recipe_name:name, n:3}) })).json();
+    if (d.error) { el.innerHTML = `<div class="tips">${esc(d.error)}</div>`; return; }
+    el.innerHTML = d.suggestions.map(s => `
+      <div class="reuse-item">
+        <h4>→ ${esc(s.recipe.name)} ${s.recipe.dish_type ? `<span class="tag ${typeClass(s.recipe.dish_type)}">${esc(s.recipe.dish_type)}</span>` : ''}</h4>
+        <div class="how">${esc(s.how)}</div>
+        <div class="meta" style="font-size:12px;color:var(--sub)">${s.recipe.estimated_minutes ? s.recipe.estimated_minutes+' 分钟 · ' : ''}难度 ${'★'.repeat(s.recipe.difficulty||0)} · ${s.recipe.calories_kcal} 大卡</div>
+      </div>`).join('') || '<div class="tips">没找到合适的二次加工，换个菜名试试。</div>';
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  } catch (e) { el.innerHTML = `<div class="tips">请求失败: ${esc(e.message)}</div>`; }
+}
+
+// ---- 事件绑定 ----
+$('mode_seg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  [...$('mode_seg').children].forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  MODE = b.dataset.mode;
+  $('days_row').classList.toggle('hidden', MODE !== 'weekly');
+  $('result').classList.add('hidden');
+});
+
+$('menu').addEventListener('click', e => {
+  const fb = e.target.closest('.fb');
+  if (fb) { sendFeedback(fb.dataset.id, +fb.dataset.v); fb.classList.add('done'); return; }
+  const rl = e.target.closest('.reuse-link');
+  if (rl) { reuse(rl.dataset.name); return; }
+  const dc = e.target.closest('.day-chip');
+  if (dc) { reuse(dc.dataset.name); return; }
+});
 
 $('go').onclick = () => recommend(Math.floor(Math.random()*1e9));
 $('reshuffle').onclick = () => recommend(Math.floor(Math.random()*1e9));
+$('reuse_go').onclick = () => { const v = $('reuse_input').value.trim(); if (v) reuse(v); };
+$('reuse_input').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = $('reuse_input').value.trim(); if (v) reuse(v); } });
+$('refresh_profile').onclick = loadProfile;
 $('save_llm').onclick = async () => {
   const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
   await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-  alert('已保存');
+  toast('已保存');
 };
 $('test_llm').onclick = async () => {
   const body = {base_url: $('base_url').value, api_key: $('api_key').value, model: $('model').value};
   const r = await (await fetch('/api/llm/test', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();
-  alert(r.ok ? '✅ ' + r.message : '❌ ' + r.message);
+  toast(r.ok ? '✅ ' + r.message : '❌ ' + r.message);
 };
 
 loadMeta();

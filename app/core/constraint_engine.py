@@ -28,9 +28,13 @@ class ConstraintEngine:
         time_budget = constraints.get("time_budget")
         max_difficulty = constraints.get("max_difficulty")
         budget = constraints.get("budget")
+        exclude_ids = set(constraints.get("exclude_ids") or [])
 
         pool = []
         for r in self.recipes:
+            # 周计划去重：排除已经用过的菜
+            if r.get("id") in exclude_ids:
+                continue
             # 忌口"辣"：优先用 LLM 标注的辣度（微辣也算辣）
             if no_spicy and r.get("spiciness") in ("辣", "微辣"):
                 continue
@@ -88,6 +92,10 @@ class ConstraintEngine:
         season = constraints.get("season")
         if season and recipe.get("season") in (season, "四季"):
             s += 1.0
+        # 家庭味觉画像（软约束）：喜欢的菜 / 口味 / 食材加分，讨厌的减分
+        profile = constraints.get("profile")
+        if profile is not None:
+            s += profile.score_recipe(recipe)
         return s
 
     # ---------- 第三步：加权随机 ----------

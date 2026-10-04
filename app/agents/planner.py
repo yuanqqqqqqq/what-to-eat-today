@@ -10,6 +10,9 @@ from ..config import get_llm_config
 from ..core.constraint_engine import ConstraintEngine
 from ..core.shopping import build_shopping_list
 from ..core.nutrition import analyze
+from ..core.profile import TasteProfile
+from ..core.weekly import generate_weekly_plan
+from ..core.leftover import suggest_reuse
 from ..llm.client import LLMClient
 
 # 模块级缓存：菜谱只加载一次
@@ -88,6 +91,11 @@ def generate_plan(constraints: dict, seed: int = None) -> dict:
     if not constraints.get("season"):
         constraints["season"] = current_season()
 
+    # 家庭味觉画像（软约束打分用，有反馈才生效）
+    profile = TasteProfile()
+    if profile.data.get("count"):
+        constraints["profile"] = profile
+
     menu, info = engine.recommend(constraints, rng=rng)
     if not menu:
         return {"ok": False, "error": info.get("error", "无符合条件的菜"), "info": info}
@@ -110,3 +118,20 @@ def generate_plan(constraints: dict, seed: int = None) -> dict:
         "llm_used": llm.available,
         "seed": seed,
     }
+
+
+def generate_weekly(constraints: dict, days: int = 7, seed: int = None) -> dict:
+    """周计划入口：N 天不重样 + 周合并采购清单。"""
+    engine = get_engine()
+    if not constraints.get("season"):
+        constraints["season"] = current_season()
+    profile = TasteProfile()
+    if profile.data.get("count"):
+        constraints["profile"] = profile
+    return generate_weekly_plan(engine, constraints, days=days, seed=seed)
+
+
+def reuse_plan(recipe_name: str, n: int = 3) -> dict:
+    """一菜两吃入口：给剩菜找二次加工方案。"""
+    engine = get_engine()
+    return suggest_reuse(engine, recipe_name, n=n)
