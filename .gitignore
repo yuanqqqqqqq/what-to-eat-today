@@ -1,7 +1,11 @@
-# 忽略用户私有数据与环境
+# 用户私有数据与环境
 .env
 data/settings.json
 data/profile.json
+data/user_recipes.json
+data/prices.json
+data/pantry.json
+data/recipes.json.bak
 data/raw/
 data/raw/*.tar.gz
 data/raw/*.json
@@ -12,6 +16,12 @@ __pycache__/
 .venv/
 venv/
 
-# 系统
-.DS_Store
+# 打包产物
+build/
+dist/
+*.spec
+
+# 临时文件
 *.log
+*.png
+.DS_Store

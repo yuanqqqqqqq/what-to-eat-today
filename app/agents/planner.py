@@ -19,13 +19,15 @@ from ..llm.client import LLMClient
 _ENGINE = None
 
 
-def get_engine() -> ConstraintEngine:
+def get_engine(reload: bool = False) -> ConstraintEngine:
     global _ENGINE
-    if _ENGINE is None:
+    if _ENGINE is None or reload:
         import json
-        from pathlib import Path
-        base = Path(__file__).resolve().parent.parent.parent
-        recipes = json.load(open(base / "data" / "recipes.json", encoding="utf-8"))
+        from ..paths import resource, data_file
+        recipes = json.load(open(resource("data/recipes.json"), encoding="utf-8"))
+        user_file = data_file("user_recipes.json")
+        if user_file.exists():
+            recipes = recipes + json.load(open(user_file, encoding="utf-8"))
         _ENGINE = ConstraintEngine(recipes)
     return _ENGINE
 

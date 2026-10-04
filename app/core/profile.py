@@ -10,9 +10,9 @@ from datetime import datetime
 from pathlib import Path
 
 from .rules import substantive_ingredients
+from ..paths import data_file
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-PROFILE_FILE = BASE_DIR / "data" / "profile.json"
+PROFILE_FILE = data_file("profile.json")
 
 DEFAULT_PROFILE = {
     "dish_likes": {},        # recipe id -> 累计分（喜欢 +1 / 不喜欢 -1）

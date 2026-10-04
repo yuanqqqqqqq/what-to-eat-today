@@ -8,7 +8,7 @@
 import math
 import random
 from .rules import (
-    TABOO_RULES, ALLERGY_RULES, ingredient_hit, recipe_needs_devices,
+    TABOO_RULES, ALLERGY_RULES, ingredient_hit, recipe_needs_devices, is_homely,
 )
 from .scenes import scene_hard_exclude, scene_score
 from .food_db import FoodDB, estimate_meal_cost
@@ -26,6 +26,7 @@ class ConstraintEngine:
     def hard_filter(self, constraints):
         no_spicy = "辣" in constraints.get("taboos", [])
         other_kws = self._taboo_keywords(constraints, exclude_spicy=True)
+        dislikes = constraints.get("dislikes") or []
         devices = set(constraints.get("devices", []))
         time_budget = constraints.get("time_budget")
         max_difficulty = constraints.get("max_difficulty")
@@ -38,6 +39,9 @@ class ConstraintEngine:
             # 周计划去重：排除已经用过的菜
             if r.get("id") in exclude_ids:
                 continue
+            # 家常化：默认排除名贵/偏贵食材（数据保留，可搜索）
+            if constraints.get("homely", True) and not is_homely(r):
+                continue
             # 场景硬排除（便当少汤 / 控糖避甜食等）
             if scene_id and scene_hard_exclude(scene_id, r):
                 continue
@@ -46,6 +50,9 @@ class ConstraintEngine:
                 continue
             # 其他忌口/过敏（原料关键词命中即排除）
             if other_kws and ingredient_hit(r, other_kws):
+                continue
+            # 讨厌的食材（直接匹配菜名/原料，硬排除）
+            if dislikes and ingredient_hit(r, dislikes):
                 continue
             # 设备（需要的设备 ⊆ 用户设备）
             needed = recipe_needs_devices(r)
@@ -75,6 +82,10 @@ class ConstraintEngine:
     # ---------- 第二步：软约束打分 ----------
     def score(self, recipe, constraints):
         s = 0.0
+        # 收藏的菜加分（用户点过收藏，更倾向出现）
+        favorite_ids = constraints.get("favorite_ids") or []
+        if favorite_ids and recipe.get("id") in favorite_ids:
+            s += 3.0
         # 食材复用：家里现有食材命中加分（优先消耗）
         pantry = [p.strip() for p in constraints.get("pantry", []) if p.strip()]
         if pantry:
@@ -167,28 +178,40 @@ class ConstraintEngine:
         """
         返回 (菜单列表, 说明 dict)
         constraints: {people, dishes, soups, taboos, allergies, taste_prefs,
-                      budget, time_budget, devices, max_difficulty, must_include, pantry}
+                      budget, time_budget, devices, max_difficulty, must_include,
+                      pantry, locked_ids}
         """
         rng = rng or random.Random()
         dishes_n = constraints.get("dishes", 2)
         soups_n = constraints.get("soups", 1)
         total_n = dishes_n + soups_n
 
+        # 锁定菜：优先放入菜单（用户保存的菜，再随机也不消失），绕过家常化过滤
+        locked_ids = constraints.get("locked_ids") or []
+        locked = [r for r in self.recipes if r.get("id") in locked_ids][:total_n]
+        locked_ids_set = {r["id"] for r in locked}
+
         pool = self.hard_filter(constraints)
-        if not pool:
+        if not pool and not locked:
             return [], {"error": "硬约束过滤后无候选菜", "pool_size": 0}
 
-        soup_pool = [r for r in pool if r.get("dish_type") in self.SOUP_DISH_TYPES]
-        dish_pool = [r for r in pool if r.get("dish_type") in self.MEAL_DISH_TYPES]
-        pool_has_meat = any(r.get("dish_type") == "荤" for r in dish_pool)
+        # 已锁定的菜分别占了几道荤/素/汤，剩余菜位再随机补齐
+        locked_soups = sum(1 for r in locked if r.get("dish_type") in self.SOUP_DISH_TYPES)
+        locked_dishes = sum(1 for r in locked if r.get("dish_type") in self.MEAL_DISH_TYPES)
+        need_soups = max(0, soups_n - locked_soups)
+        need_dishes = max(0, dishes_n - locked_dishes)
+
+        soup_pool = [r for r in pool if r.get("dish_type") in self.SOUP_DISH_TYPES and r.get("id") not in locked_ids_set]
+        dish_pool = [r for r in pool if r.get("dish_type") in self.MEAL_DISH_TYPES and r.get("id") not in locked_ids_set]
+        pool_has_meat = any(r.get("dish_type") == "荤" for r in dish_pool) or any(r.get("dish_type") == "荤" for r in locked)
 
         best = None
         best_fallback = None  # 未通过校验时，成本最低的兜底组合
         best_fallback_cost = None
         for _ in range(max_attempts):
-            soups = self.weighted_sample(soup_pool, soups_n, constraints, rng) if soups_n else []
-            dishes = self.weighted_sample(dish_pool, dishes_n, constraints, rng) if dishes_n else []
-            combo = dishes + soups
+            soups = self.weighted_sample(soup_pool, need_soups, constraints, rng) if need_soups else []
+            dishes = self.weighted_sample(dish_pool, need_dishes, constraints, rng) if need_dishes else []
+            combo = locked + dishes + soups
             if self.validate_combo(combo, constraints, pool_has_meat):
                 best = combo
                 break
@@ -204,7 +227,8 @@ class ConstraintEngine:
             "pool_size": len(pool),
             "soup_pool": len(soup_pool),
             "dish_pool": len(dish_pool),
+            "locked_count": len(locked),
             "attempts_used": _ + 1,
             "fallback": fallback,
         }
-        return best or best_fallback or [], info
+        return best or best_fallback or locked or [], info

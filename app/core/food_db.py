@@ -13,9 +13,9 @@ import re
 from pathlib import Path
 
 from .rules import substantive_ingredients
+from ..paths import resource
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-FOOD_FILE = BASE_DIR / "data" / "food_composition.json"
+FOOD_FILE = resource("data/food_composition.json")
 
 # 成分表未收录 / 口语名直接补营养（kcal, protein, fat, carb 每 100g）
 MANUAL_SUPPLEMENT = {
@@ -247,8 +247,20 @@ class FoodDB:
 
     # ---------- 价格估算 ----------
     @staticmethod
-    def estimate_price(recipe: dict) -> float:
-        """估算单道菜成本（元，供 1 人份一桌基准）。"""
+    def estimate_price(recipe: dict, prices: dict = None) -> float:
+        """估算单道菜成本（元）。有用户价格表时，按食材价格累加。"""
+        if prices:
+            names = [i.get("name", "") for i in recipe.get("ingredients", [])]
+            total = 0.0
+            hit = 0
+            for n in names:
+                for pn, pp in prices.items():
+                    if pn and pp and (pn in n or n in pn):
+                        total += pp
+                        hit += 1
+                        break
+            if hit:
+                return max(2.0, round(total, 1))
         d_type = recipe.get("dish_type") or "其他"
         base = {"荤": 22, "素": 6, "汤": 9, "主食": 5,
                 "甜点": 9, "饮品": 5, "半成品": 12, "其他": 8}.get(d_type, 8)
@@ -284,8 +296,8 @@ def _get_db() -> FoodDB:
     return _DB
 
 
-def estimate_meal_cost(menu: list, people: int = 1) -> float:
+def estimate_meal_cost(menu: list, people: int = 1, prices: dict = None) -> float:
     """一桌菜的总成本：Σ 单菜成本 × 人数系数（人数增加时菜量加大，成本边际递减）。"""
     factor = 1 + (max(1, people) - 1) * 0.35
-    total = sum(FoodDB.estimate_price(r) for r in menu)
+    total = sum(FoodDB.estimate_price(r, prices) for r in menu)
     return round(total * factor, 1)

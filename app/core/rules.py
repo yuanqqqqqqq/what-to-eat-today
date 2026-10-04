@@ -108,3 +108,38 @@ def substantive_ingredients(names: list) -> list:
         if n and n not in out and is_substantive_ingredient(n):
             out.append(n)
     return out
+
+
+# ---------- 家常化：默认随机时过滤（数据保留在库中，可通过搜索查到） ----------
+# 名贵食材：彻底不家常，默认不随机
+PREMIUM_INGREDIENTS = (
+    "鲍鱼", "龙虾", "鱼翅", "海参", "三文鱼", "鳕鱼", "松茸", "甲鱼", "鹅肝",
+    "鱼子酱", "大闸蟹", "扇贝", "生蚝", "海螺", "牛蛙", "燕窝",
+)
+# 偏贵肉类：默认不随机，但数据保留可搜索（用户确认：牛羊肉不进随机）
+PREMIUM_RED_MEAT = ("牛肉", "牛腩", "牛排", "牛柳", "牛腱", "肥牛", "牛尾", "羊肉", "羊排", "羊腿")
+
+# 西式/异国菜（咖喱、奶油汤、意式等）：默认不随机，但数据保留可搜索
+NON_HOMELY_KWS = (
+    "咖喱", "椰浆", "椰奶", "香茅", "冬阴功", "罗宋", "意式", "意大利",
+    "披萨", "意面", "通心粉", "帕马森", "味噌", "北非", "苏格兰", "奶油汤", "黄油鸡",
+)
+
+
+def is_homely(recipe) -> bool:
+    """是否家常（不含名贵/偏贵食材、西式/异国菜）。小龙虾、虾、普通螃蟹视为家常。"""
+    text = recipe.get("name", "") + " " + " ".join(
+        i.get("name", "") for i in recipe.get("ingredients", []))
+    for kw in PREMIUM_INGREDIENTS:
+        if kw in text:
+            # "龙虾"会误伤"小龙虾"，小龙虾是家常夜宵
+            if kw == "龙虾" and "小龙虾" in text:
+                continue
+            return False
+    for kw in PREMIUM_RED_MEAT:
+        if kw in text:
+            return False
+    for kw in NON_HOMELY_KWS:
+        if kw in text:
+            return False
+    return True

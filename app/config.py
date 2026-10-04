@@ -6,10 +6,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+from .paths import resource, data_file
 
-SETTINGS_FILE = BASE_DIR / "data" / "settings.json"
+load_dotenv(resource(".env"))
+
+SETTINGS_FILE = data_file("settings.json")
 
 
 def get_llm_config() -> dict:
