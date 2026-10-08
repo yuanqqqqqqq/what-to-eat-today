@@ -5,6 +5,9 @@
 输入: data/recipes.json
 输出: 原地更新 calories_kcal（并打印前后对比统计）
 可重复运行（幂等）。
+
+注意：写回格式（indent=2）必须与 clean_recipes.py / parse_recipes.py 保持一致，
+否则每次重算都会把整个 1.6MB 数据文件重排一遍，diff 无法审阅。
 """
 import json
 import os
@@ -16,11 +19,12 @@ from app.core.food_db import FoodDB
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECIPES = os.path.join(BASE, "data", "recipes.json")
+JSON_INDENT = 2
 
 
 def main():
     recipes = json.load(open(RECIPES, encoding="utf-8"))
-    db = FoodDB()
+    FoodDB()  # 预热成分表
 
     old_vals = [r.get("calories_kcal") for r in recipes]
     changed = 0
@@ -30,7 +34,8 @@ def main():
             changed += 1
         r["calories_kcal"] = new
 
-    json.dump(recipes, open(RECIPES, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump(recipes, open(RECIPES, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=JSON_INDENT)
 
     new_vals = [r["calories_kcal"] for r in recipes]
     print(f"重算完成：{len(recipes)} 道，其中 {changed} 道热量有变化")

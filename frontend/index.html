@@ -118,9 +118,19 @@
   .btn-generate:hover { background: var(--accent-hover); }
   .btn-generate:disabled { opacity: 0.6; cursor: default; }
 
+  /* 关键约束常驻区（忌口/过敏/预算/现成食材） */
+  .quick-constraints {
+    margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .quick-constraints .adv-group { margin-bottom: 0; }
+
   /* 场景提示 */
   .scene-hint { margin-top: 14px; font-size: 12px; color: var(--t2); min-height: 18px; }
   .scene-hint b { color: var(--accent); font-weight: 600; }
+  .llm-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .llm-status { font-size: 12px; color: var(--t2); }
+  .llm-hint { font-size: 12px; color: var(--t3); margin-top: 8px; line-height: 1.7; }
 
   /* 高级配置 */
   .advanced-panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); display: none; }
@@ -185,8 +195,13 @@
   /* 菜品菜单条目（纵向，菜名是主角） */
   .dish-grid { display: flex; flex-direction: column; }
   .dish-card {
-    display: flex; align-items: center; gap: 20px;
-    padding: 18px 4px;
+    display: grid;
+    grid-template-columns: 44px minmax(90px, 170px) 1fr auto;
+    grid-template-areas:
+      "visual name info actions"
+      "visual name info feedback";
+    align-items: center; column-gap: 16px; row-gap: 4px;
+    padding: 16px 4px;
     border-bottom: 1px solid var(--line);
     transition: background-color var(--dur-base) var(--ease-out);
   }
@@ -194,15 +209,28 @@
   .dish-card:hover { background: var(--entry-bg); }
   @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .dish-card.anim { animation: card-in var(--dur-slow) var(--ease-out) backwards; }
-  .dish-name { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--t1); flex: 0 0 180px; line-height: 1.45; cursor: pointer; transition: color var(--dur-fast) var(--ease-out); }
+  .dish-visual {
+    grid-area: visual; width: 44px; height: 44px; border-radius: 50%;
+    background: var(--soft); display: flex; align-items: center; justify-content: center;
+    font-size: 22px; line-height: 1;
+  }
+  .dish-name {
+    grid-area: name; font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--t1);
+    line-height: 1.45; cursor: pointer; transition: color var(--dur-fast) var(--ease-out);
+  }
   .dish-name:hover { color: var(--accent); }
-  .dish-info { flex: 1; min-width: 0; cursor: pointer; }
+  .dish-info { grid-area: info; min-width: 0; cursor: pointer; }
   .dish-tags { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; }
   .tag { font-size: 11px; padding: 2px 8px; border-radius: var(--r-sm); background: var(--soft); color: var(--t2); font-weight: 500; }
   .tag.type::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-right: 5px; vertical-align: 1px; }
   .dish-meta { font-size: 12px; color: var(--t2); line-height: 1.7; }
   .dish-meta .star { color: var(--accent); letter-spacing: 1px; }
-  .dish-actions { display: flex; gap: 6px; align-items: center; flex: 0 0 auto; }
+  .dish-why { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .why-chip {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid transparent;
+  }
+  .dish-actions { grid-area: actions; display: flex; gap: 6px; align-items: center; flex: 0 0 auto; }
   .action-btn {
     padding: 6px 10px; font-size: 12px; color: var(--t2); background: transparent;
     border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer;
@@ -210,10 +238,29 @@
   }
   .action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
   .action-btn.done { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+  .dish-feedback { grid-area: feedback; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+  .fb-label { font-size: 11px; color: var(--t3); }
+  .fb-btn {
+    padding: 2px 7px; font-size: 14px; line-height: 1.5; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm);
+    filter: grayscale(0.85); opacity: 0.75;
+    transition: opacity var(--dur-base) var(--ease-out), filter var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
+  }
+  .fb-btn:hover { opacity: 1; filter: none; border-color: var(--line2); }
+  .fb-btn.done { opacity: 1; filter: none; border-color: var(--accent); background: var(--accent-soft); }
   @media (max-width: 700px) {
-    .dish-card { flex-wrap: wrap; gap: 8px; }
-    .dish-name { flex: 1 1 100%; }
-    .dish-actions { flex: 1 1 100%; }
+    .dish-card {
+      grid-template-columns: 36px 1fr;
+      grid-template-areas:
+        "visual name"
+        "info info"
+        "actions actions"
+        "feedback feedback";
+      row-gap: 8px;
+    }
+    .dish-visual { width: 36px; height: 36px; font-size: 18px; }
+    .dish-actions { justify-content: flex-start; }
+    .dish-feedback { justify-content: flex-start; }
   }
 
   /* 弹窗 */
@@ -228,12 +275,22 @@
   .modal-head button:hover { color: var(--t1); background: var(--soft); }
   .modal-body { font-size: 14px; line-height: 1.9; white-space: pre-wrap; color: var(--t1); }
   .modal-body.spin { color: var(--t3); }
+  .modal-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .modal-tools .head-btn { white-space: normal; text-align: left; }
+  .loading { font-size: 13px; color: var(--t3); padding: 6px 0; }
+  .reuse-item { border-bottom: 1px dashed var(--line); padding: 8px 0; }
+  .reuse-item:last-child { border-bottom: none; }
+  .reuse-name { font-weight: 600; color: var(--t1); font-size: 14px; }
+  .reuse-how { font-size: 13px; color: var(--t2); line-height: 1.7; }
+  .simplified { font-family: inherit; font-size: 13px; line-height: 1.85; white-space: pre-wrap; color: var(--t1); }
 
   /* 周计划 */
   .week-summary { padding: 16px 20px; background: var(--entry-bg); border-radius: var(--r-md); margin-bottom: 16px; font-size: 13px; color: var(--t2); line-height: 1.8; }
   .week-summary b { color: var(--t1); font-weight: 600; }
   .day-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px; }
-  .day-row h4 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .day-row h4 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .day-tag { font-size: 11px; font-weight: 500; color: var(--t3); background: var(--soft); padding: 1px 7px; border-radius: 8px; }
+  .day-tag.warn { color: var(--accent); background: var(--accent-soft); }
   .day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .day-chip { font-size: 12px; padding: 4px 10px; background: var(--soft); border: none; border-radius: var(--r-sm); color: var(--t1); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
   .day-chip:hover { background: var(--hover); }
@@ -247,6 +304,12 @@
   .nutri-strip { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; margin-bottom: 8px; }
   .nutri-strip .k { color: var(--t2); }
   .nutri-strip .v { font-weight: 600; }
+  .nutri-macros .v { font-family: var(--serif); font-size: 15px; }
+  .nutri-note { font-size: 12px; color: var(--t3); margin: 4px 0 6px; line-height: 1.7; }
+  .disclaimer {
+    font-size: 12px; color: var(--t3); margin-top: 10px; padding-top: 8px;
+    border-top: 1px dashed var(--line); line-height: 1.7;
+  }
   .tips { font-size: 13px; color: var(--accent); margin-top: 6px; }
   .step-dish { margin-bottom: 16px; }
   .step-dish h4 { font-size: 14px; margin-bottom: 6px; }
@@ -457,32 +520,42 @@
       </div>
     </div>
 
-    <div class="scene-hint" id="sceneHint"></div>
-
-    <div class="advanced-panel" id="advPanel">
+    <!-- 关键约束常驻可见：忌口 / 过敏 / 预算 / 现成食材 -->
+    <div class="quick-constraints">
       <div class="adv-group">
-        <label class="adv-label">忌口（硬约束）</label>
+        <label class="adv-label">忌口（硬约束，绝不会出现）</label>
         <div class="chips" id="tabooChips"></div>
       </div>
       <div class="adv-group">
         <label class="adv-label">过敏（硬约束）</label>
         <div class="chips" id="allergyChips"></div>
       </div>
+      <div class="adv-row">
+        <div class="field" style="max-width:180px">
+          <label>预算（元 / 整桌）</label>
+          <input type="number" id="budget" placeholder="不限" min="0">
+        </div>
+        <div class="field" style="min-width:240px">
+          <label>家里现有食材（优先消耗，逗号分隔）</label>
+          <input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿">
+        </div>
+      </div>
+    </div>
+
+    <div class="scene-hint" id="sceneHint"></div>
+
+    <div class="advanced-panel" id="advPanel">
       <div class="adv-group">
-        <label class="adv-label">口味偏好（软约束）</label>
+        <label class="adv-label">口味偏好（软约束，只影响推荐概率）</label>
         <div class="chips" id="tasteChips"></div>
       </div>
       <div class="adv-group">
-        <label class="adv-label">厨房设备</label>
+        <label class="adv-label">厨房设备（没勾的设备不会被用到的菜）</label>
         <div class="chips" id="deviceChips"></div>
       </div>
       <div class="adv-group">
         <label class="adv-label">其他约束</label>
         <div class="adv-row">
-          <div class="field">
-            <label>预算（元 / 整桌）</label>
-            <input type="number" id="budget" placeholder="不限">
-          </div>
           <div class="field">
             <label>时间（分钟）</label>
             <select id="timeBudget">
@@ -517,11 +590,15 @@
         </div>
       </div>
       <div class="adv-group">
-        <label class="adv-label">家里现有食材（优先消耗，逗号分隔）</label>
-        <div class="adv-row"><div class="field" style="min-width:280px"><input type="text" id="pantry" placeholder="如：鸡蛋, 西红柿"></div></div>
+        <label class="adv-label">多 Agent 编排（LangGraph）</label>
+        <label class="check-row">
+          <input type="checkbox" id="useGraph">
+          <span>用「规划师 → 营养师 → 采购员 → 搭配师」四 Agent 工作流生成（营养不达标会自动重选，最多 3 轮）</span>
+        </label>
+        <p class="llm-hint" id="graphNote"></p>
       </div>
       <div class="adv-group">
-        <label class="adv-label">LLM 设置（可选，接入后搭配说明更智能）</label>
+        <label class="adv-label">LLM 设置（可选，接入后搭配说明更智能；不配也能完整使用）</label>
         <div class="adv-row">
           <div class="field" style="min-width:200px">
             <label>Base URL</label>
@@ -536,11 +613,12 @@
             <input type="text" id="llmModel" placeholder="如 deepseek-chat">
           </div>
         </div>
-        <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+        <div class="llm-actions">
           <button class="head-btn" id="llmSave">保存</button>
           <button class="head-btn" id="llmTest">测试连接</button>
-          <span id="llmStatus" style="font-size:12px; color:var(--t2);"></span>
+          <span id="llmStatus" class="llm-status"></span>
         </div>
+        <p class="llm-hint" id="llmHint"></p>
       </div>
     </div>
   </section>
@@ -567,6 +645,10 @@
         <div class="prefs-section">
           <div class="prefs-title">我的口味</div>
           <div class="chips" id="prefTasteChips"></div>
+        </div>
+        <div class="prefs-section">
+          <div class="prefs-title">口味画像（来自 👍/👎 反馈）</div>
+          <div id="profileBox"></div>
         </div>
         <div class="prefs-section">
           <div class="prefs-title">讨厌的食材（含这些的菜不出现）</div>
@@ -658,6 +740,8 @@ let currentPeople = 3;
 let currentSeed = null;
 let currentData = null;     // 最近一次生成的数据（大小份/锁定后重渲染用）
 let currentMenu = [];       // 当前菜单（点击看做法用）
+let currentRecipe = null;   // 做法弹窗里当前这道菜
+let PROFILE = null;         // 家庭味觉画像摘要
 let mealHTML = null;        // 今日一餐方案（切换 tab 不丢）
 let weeklyHTML = null;      // 一周菜单方案（切换 tab 不丢）
 let lockedIds = [];         // 已保存/锁定的菜 id（localStorage 持久化）
@@ -689,6 +773,14 @@ async function loadMeta() {
   renderChips($('deviceChips'), META.devices);
   renderTastePrefs();
   renderDislikes();
+  // 打包版（EXE）裁剪了 LangGraph，这里禁用开关而不是让用户点了收到 500
+  if (META.graph_available === false) {
+    const cb = $('useGraph');
+    cb.disabled = true;
+    cb.checked = false;
+    const note = document.getElementById('graphNote');
+    if (note) note.textContent = '当前运行环境（打包版）未内置 LangGraph，多 Agent 编排不可用；规则流水线推荐完全不受影响。';
+  }
 }
 
 function renderScenePills(scenes) {
@@ -773,7 +865,7 @@ function switchView(v) {
   $('dishCounter').style.display = isMeal ? '' : 'none';
   $('soupCounter').style.display = isMeal ? '' : 'none';
   $('dayCounter').style.display = isWeekly ? '' : 'none';
-  if (v === 'prefs') { renderTastePrefs(); renderDislikes(); renderPantry(); renderFavorites(); }
+  if (v === 'prefs') { renderTastePrefs(); renderDislikes(); renderPantry(); renderFavorites(); loadProfile(); }
   if (v === 'market') { renderPrices(); }
   if (isMeal) $('resultArea').innerHTML = mealHTML || emptyHTML('选好场景，点「生成方案」');
   if (isWeekly) $('resultArea').innerHTML = weeklyHTML || emptyHTML('一周不重样，顺便把整周采购清单算好');
@@ -808,34 +900,58 @@ function buildReq() {
 }
 
 /* ---------- 生成 ---------- */
+async function postJSON(url, body) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  let data = null;
+  try { data = await r.json(); } catch (e) { data = null; }
+  if (!r.ok) {
+    // 服务端错误（422 参数校验 / 500）以前会被静默当成"生成成功但 0 道菜"
+    const detail = data && (data.detail || data.error);
+    throw new Error(typeof detail === 'string' ? detail : `请求失败（HTTP ${r.status}）`);
+  }
+  return data || {};
+}
+
 async function generate() {
   if (view !== 'meal' && view !== 'weekly') switchView('meal');
-  // 锁定菜数超限提示（今日一餐）
-  if (view === 'meal') {
-    const total = (+($('dishCounter').querySelector('input').value) || 0) + (+($('soupCounter').querySelector('input').value) || 0);
-    if (lockedIds.length > total) toast(`锁定了 ${lockedIds.length} 道，但只设了 ${total} 个菜位，多余的会被忽略`);
+  const dishN = +($('dishCounter').querySelector('input').value) || 0;
+  const soupN = +($('soupCounter').querySelector('input').value) || 0;
+  if (view === 'meal' && dishN + soupN <= 0 && !lockedIds.length) {
+    toast('至少选 1 道菜或 1 道汤');
+    return;
+  }
+  if (view === 'meal' && lockedIds.length > dishN + soupN) {
+    toast(`锁定了 ${lockedIds.length} 道，但只设了 ${dishN + soupN} 个菜位，多余的会被忽略`);
   }
   const btn = $('btnGenerate');
   btn.disabled = true;
   btn.textContent = '生成中…';
   currentSeed = Math.floor(Math.random() * 1e9);
 
+  const useGraph = $('useGraph').checked;
+  let url, body;
+  if (view === 'weekly') {
+    url = '/api/weekly';
+    body = Object.assign({}, buildReq(), { days: +($('dayCounter').querySelector('input').value) || 7, seed: currentSeed });
+  } else {
+    url = useGraph ? '/api/plan/graph' : '/api/recommend';
+    body = Object.assign({}, buildReq(), { seed: currentSeed });
+  }
+
   try {
-    let url, body;
-    if (view === 'weekly') {
-      url = '/api/weekly';
-      body = Object.assign({}, buildReq(), { days: +($('dayCounter').querySelector('input').value) || 7, seed: currentSeed });
-    } else {
-      url = '/api/recommend';
-      body = Object.assign({}, buildReq(), { seed: currentSeed });
+    const data = await postJSON(url, body);
+    if (data.ok === false) {
+      $('resultArea').innerHTML = emptyHTML(data.error || '没有符合条件的菜，试试放宽约束');
+      return;
     }
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await r.json();
-    if (data.ok === false) { $('resultArea').innerHTML = emptyHTML(data.error || '没有符合条件的菜，试试放宽约束'); return; }
     if (view === 'weekly') renderWeekly(data); else renderMeal(data);
     $('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
-    $('resultArea').innerHTML = emptyHTML('请求失败：' + e.message);
+    $('resultArea').innerHTML = emptyHTML('生成失败：' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = '生成方案';
@@ -850,8 +966,13 @@ function dishCard(r, i, animate = true) {
   const taste = (r.taste || []).join('、');
   const locked = lockedIds.includes(r.id);
   const fav = favorites.some(f => f.id === r.id);
+  const cur = currentData || {};
+  const visual = (cur.visuals || {})[r.id] || (r.dish_type === '汤' ? '🍲' : '🍽️');
+  const cost = (cur.costs || {})[r.id];
+  const reasons = (cur.reasons || {})[r.id] || [];
   return `
     <div class="dish-card${animate ? ' anim' : ''}" style="animation-delay:${(i || 0) * 60}ms" data-id="${esc(r.id)}">
+      <div class="dish-visual" aria-hidden="true">${visual}</div>
       <div class="dish-name">${esc(r.name)}</div>
       <div class="dish-info">
         <div class="dish-tags">
@@ -859,25 +980,87 @@ function dishCard(r, i, animate = true) {
           ${r.spiciness ? `<span class="tag">${esc(r.spiciness)}</span>` : ''}
         </div>
         <div class="dish-meta">
-          ${taste ? taste + '，时令 ' + esc(r.season || '四季') : '时令 ' + esc(r.season || '四季')}<br>
-          <span class="star">${'★'.repeat(r.difficulty || 0)}</span> ${r.estimated_minutes ? r.estimated_minutes + ' 分钟' : '耗时未知'}
+          <span class="star">${'★'.repeat(r.difficulty || 0) || '—'}</span>
+          ${r.estimated_minutes ? '约 ' + r.estimated_minutes + ' 分钟' : '耗时未知'}
+          ${r.calories_kcal ? '· 约 ' + r.calories_kcal + ' 千卡' : ''}
+          ${cost != null ? '· 约 ' + cost + ' 元' : ''}
+          ${taste ? '<br>口味 ' + esc(taste) : ''}${r.season ? '，时令 ' + esc(r.season) : ''}
         </div>
+        ${reasons.length ? `<div class="dish-why">${reasons.map(x => `<span class="why-chip">${esc(x)}</span>`).join('')}</div>` : ''}
       </div>
       <div class="dish-actions">
-        <button class="action-btn fav${fav ? ' done' : ''}" data-id="${esc(r.id)}">${fav ? '⭐ 已收藏' : '⭐ 收藏'}</button>
-        <button class="action-btn lock${locked ? ' done' : ''}" data-id="${esc(r.id)}">${locked ? '🔒 已锁定' : '🔒 锁定'}</button>
+        <button class="action-btn" data-act="how" data-id="${esc(r.id)}">看做法</button>
+        <button class="action-btn fav${fav ? ' done' : ''}" data-act="fav" data-id="${esc(r.id)}">${fav ? '⭐ 已收藏' : '⭐ 收藏'}</button>
+        <button class="action-btn lock${locked ? ' done' : ''}" data-act="lock" data-id="${esc(r.id)}">${locked ? '🔒 已锁定' : '🔒 锁定'}</button>
+      </div>
+      <div class="dish-feedback">
+        <span class="fb-label">这菜合你口味吗</span>
+        <button class="fb-btn" data-act="fb-up" data-id="${esc(r.id)}" title="喜欢，以后多推荐">👍</button>
+        <button class="fb-btn" data-act="fb-down" data-id="${esc(r.id)}" title="不喜欢，以后少推荐">👎</button>
       </div>
     </div>`;
+}
+
+function recipeToolsHTML() {
+  return `<div class="modal-tools">
+      <button class="head-btn" data-tool="leftover">♻️ 一菜两吃（剩了怎么再吃一顿）</button>
+      <button class="head-btn" data-tool="simplify">🍳 家常简化版做法</button>
+    </div>`;
+}
+
+/* 弹窗内容统一由这个函数渲染：original（原做法）+ extra（附加结果） */
+function renderRecipeModal(recipe, extra = '') {
+  openModal(recipe.name, recipeToolsHTML() + renderSteps([recipe]) + extra);
 }
 
 async function openRecipe(id) {
   let r = currentMenu.find(x => x.id === id);
   if (!r) {
     try { r = await (await fetch('/api/recipes/' + encodeURIComponent(id))).json(); }
-    catch (e) { return; }
+    catch (e) { toast('读不到这道菜'); return; }
   }
   if (!r || !r.name) return;
-  openModal(r.name, renderSteps([r]));
+  currentRecipe = r;
+  renderRecipeModal(r);
+}
+
+/* 做法弹窗里的两个附加功能 */
+function setModalExtra(html, spinner) {
+  if (!currentRecipe) return;
+  renderRecipeModal(currentRecipe, spinner ? `<div class="loading">${esc(spinner)}</div>` : html);
+}
+
+async function modalLeftover(name) {
+  setModalExtra('', '正在找二次加工方案…');
+  try {
+    const d = await postJSON('/api/leftover', { recipe_name: name, n: 3 });
+    if (d.source == null) {
+      setModalExtra('');
+      toast(d.error || '没找到这道菜');
+      return;
+    }
+    const items = (d.suggestions || []).map(s =>
+      `<div class="reuse-item"><div class="reuse-name">${esc(s.recipe.name)}</div><div class="reuse-how">${esc(s.how)}</div></div>`
+    ).join('') || '<div class="nutri-note">没找到合适的二次加工方案</div>';
+    setModalExtra(`<div class="zone" style="margin-top:14px"><h4>二次加工方案</h4>${items}</div>`);
+  } catch (e) {
+    setModalExtra('');
+    toast('查询失败：' + e.message);
+  }
+}
+
+async function modalSimplify(name) {
+  setModalExtra('', '正在生成家常简化版…（需要已配置 LLM，最长 30 秒）');
+  try {
+    const d = await postJSON('/api/simplify', { recipe_name: name });
+    if (!d.ok) {
+      setModalExtra(`<div class="nutri-note">生成不了简化版：${esc(d.error || '未知原因')}<br>（不配 LLM 不影响其它功能，推荐本身不依赖 LLM）</div>`);
+      return;
+    }
+    setModalExtra(`<div class="zone" style="margin-top:14px"><h4>🤖 家常简化版</h4><pre class="simplified">${esc(d.simplified)}</pre></div>`);
+  } catch (e) {
+    setModalExtra(`<div class="nutri-note">生成失败：${esc(e.message)}</div>`);
+  }
 }
 
 function toggleLock(id) {
@@ -892,19 +1075,35 @@ function toggleLock(id) {
 function renderMeal(d, animate = true) {
   currentData = d;
   currentMenu = d.menu || [];
+  const info = d.info || {};
   let html = '';
 
   let meta = `共 ${currentMenu.length} 道，估算 ${d.shopping ? d.shopping.est_cost_yuan : 0} 元`;
-  if (d.info && d.info.fallback) meta += '，<b class="warn">约束太紧，已给最接近的方案</b>';
-  html += `<div class="plan-summary">${esc(d.pairing_note || '')}<div class="summary-meta">${meta}</div></div>`;
+  if (info.balanced === false) meta += '，本桌没配到素菜（候选池限制）';
+  if (info.fallback) {
+    meta += `，<b class="warn">${esc(info.fallback_reason || '约束太紧，已给最接近的方案')}</b>`;
+  }
+  meta += `<br>搭配说明来源：${d.llm_used ? '🤖 LLM 生成' : '📝 模板（未使用 LLM）'}`;
+
+  const trace = renderTrace(d);
+  html += `<div class="plan-summary">${esc(d.pairing_note || '')}<div class="summary-meta">${meta}</div>${trace}</div>`;
 
   html += `<div class="dish-grid">${currentMenu.map((r, i) => dishCard(r, i, animate)).join('')}</div>`;
 
-  html += disclosure('detail', '采购清单 & 营养 & 分步做法',
+  html += disclosure('detail', `采购清单 & 营养 & 分步做法（按 ${currentPeople} 人份量）`,
     (d.shopping ? renderShopping(d.shopping) : '') + renderNutrition(d.nutrition) + renderSteps(d.menu));
 
   mealHTML = html;
   if (view === 'meal') $('resultArea').innerHTML = html;
+}
+
+/* 多 Agent 编排过程（只在用了 /api/plan/graph 时才有） */
+function renderTrace(d) {
+  const trace = d.agent_trace || [];
+  if (!trace.length) return '';
+  const lines = trace.map(t => `<div class="trace-line"><b>${esc(t.agent)}</b>：${esc(t.note)}</div>`).join('');
+  const replan = d.replans ? `，营养师回退重规划 ${d.replans} 轮` : '，一次达标';
+  return disclosure('trace', `多 Agent 编排过程（${trace.length} 步${replan}）`, lines);
 }
 
 /* ---------- 渲染：一周菜单 ---------- */
@@ -916,17 +1115,24 @@ function renderWeekly(d) {
     共 <b>${s.days}</b> 天，<b>${s.total_dishes}</b> 道菜（<b>${s.unique_dishes}</b> 道不重样），
     荤 <b>${s.meat}</b> / 素 <b>${s.veg}</b> / 汤 <b>${s.soup}</b>，
     整周估算 <b>${d.week_shopping ? d.week_shopping.est_cost_yuan : 0}</b> 元
+    ${s.balanced_days >= 0 ? `<br>荤素均衡 <b>${s.balanced_days}</b>/${s.days_with_menu} 天（有荤有素）` : ''}
+    ${s.repeated_days && s.repeated_days.length ? `<br><b class="warn">第 ${s.repeated_days.join('、')} 天候选菜不足，放宽了"不重样"</b>` : ''}
   </div>`;
 
-  html += (d.days || []).map(day => `
+  html += (d.days || []).map(day => {
+    const info = day.info || {};
+    const tag = day.menu && day.menu.length && info.balanced === false
+      ? '<span class="day-tag warn">无素菜</span>' : '';
+    return `
     <div class="day-row">
-      <h4>第 ${day.day} 天</h4>
+      <h4>第 ${day.day} 天${tag}</h4>
       <div class="day-chips">
         ${day.menu && day.menu.length
           ? day.menu.map(r => `<button class="day-chip" data-id="${esc(r.id)}">${esc(r.name)}</button>`).join('')
           : `<span class="tips">${esc(day.error || '无结果')}</span>`}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   html += disclosure('weekDetail', '整周采购清单', d.week_shopping ? renderShopping(d.week_shopping) : '');
 
@@ -951,11 +1157,31 @@ function renderShopping(shopping) {
 
 function renderNutrition(n) {
   if (!n) return '';
-  return `<div class="zone"><h4>营养粗估</h4>
+  const num = v => (v == null ? '—' : v);
+  const ppm = n.per_person_macros || {};
+  const macros = `
+      <span><span class="k">热量</span> <span class="v">${n.per_person_kcal} 千卡/人</span> <span class="k">（整桌 ${n.total_kcal}）</span></span>
+      <span><span class="k">蛋白质</span> <span class="v">${num(ppm.protein_g)} g</span></span>
+      <span><span class="k">脂肪</span> <span class="v">${num(ppm.fat_g)} g</span></span>
+      <span><span class="k">碳水</span> <span class="v">${num(ppm.carb_g)} g</span></span>
+      <span><span class="k">纤维</span> <span class="v">${num(ppm.fiber_g)} g</span></span>`;
+  const shares = n.protein_pct != null
+    ? `<div class="nutri-strip"><span><span class="k">供能比（蛋白/脂肪/碳水）</span> <span class="v">${n.protein_pct}% / ${n.fat_pct}% / ${n.carb_pct}%</span></span></div>`
+    : '';
+  const ratio = n.meat_veg_ratio == null
+    ? '本餐没有素菜'
+    : `荤:素 = ${n.meat_veg_ratio}:1（按热量）`;
+
+  return `<div class="zone"><h4>营养估算</h4>
     <div class="nutri-strip">
       <span><span class="k">荤/素/汤</span> <span class="v">${n.meat_count}/${n.veg_count}/${n.soup_count}</span></span>
+      <span><span class="k">荤素搭配</span> <span class="v">${esc(ratio)}</span></span>
     </div>
+    <div class="nutri-strip nutri-macros">${macros}</div>
+    ${shares}
+    ${n.macro_note ? `<div class="nutri-note">${esc(n.macro_note)}</div>` : ''}
     ${(n.tips || []).map(t => `<div class="tips">${esc(t)}</div>`).join('')}
+    <div class="disclaimer">${esc(n.disclaimer || '')}</div>
   </div>`;
 }
 
@@ -989,16 +1215,50 @@ $('resultArea').addEventListener('click', e => {
     if (body) body.classList.toggle('open');
     return;
   }
-  const lock = e.target.closest('.action-btn.lock');
-  if (lock) { toggleLock(lock.dataset.id); return; }
-  const fav = e.target.closest('.action-btn.fav');
-  if (fav) { toggleFav(fav.dataset.id); return; }
+  const btn = e.target.closest('[data-act]');
+  if (btn) {
+    const id = btn.dataset.id;
+    const act = btn.dataset.act;
+    if (act === 'lock') { toggleLock(id); return; }
+    if (act === 'fav') { toggleFav(id); return; }
+    if (act === 'how') { openRecipe(id); return; }
+    if (act === 'fb-up') { sendFeedback(id, 1, btn); return; }
+    if (act === 'fb-down') { sendFeedback(id, -1, btn); return; }
+  }
   const dayChip = e.target.closest('.day-chip');
   if (dayChip) { openRecipe(dayChip.dataset.id); return; }
   // 点击菜名/信息区（非按钮）→ 查看分步做法
   const info = e.target.closest('.dish-name, .dish-info');
   if (info) { openRecipe(info.closest('.dish-card').dataset.id); return; }
 });
+
+/* ---------- 口味反馈：写入本地画像，影响后续软约束打分 ---------- */
+const feedback = {};   // recipe id -> 1/-1
+try { Object.assign(feedback, JSON.parse(localStorage.getItem('feedback') || '{}')); } catch (e) {}
+
+async function sendFeedback(id, value, btn) {
+  const prev = feedback[id];
+  if (prev === value) {
+    toast('已经记过了');
+    return;
+  }
+  try {
+    const d = await postJSON('/api/feedback', { recipe_id: id, feedback: value });
+    feedback[id] = value;
+    try { localStorage.setItem('feedback', JSON.stringify(feedback)); } catch (e) {}
+    // 同步按钮状态
+    const card = btn.closest('.dish-card');
+    if (card) {
+      card.querySelectorAll('.fb-btn').forEach(b => b.classList.remove('done'));
+      btn.classList.add('done');
+    }
+    const count = d.profile ? d.profile.count : 0;
+    toast((value > 0 ? '记住了，以后多推荐这类' : '记住了，以后少推荐这道') + `（已记录 ${count} 条口味）`);
+    PROFILE = d.profile || PROFILE;
+  } catch (e) {
+    toast('反馈没记上：' + e.message);
+  }
+}
 
 /* ---------- 弹窗 ---------- */
 function openModal(title, bodyHTML, spin) {
@@ -1009,6 +1269,12 @@ function openModal(title, bodyHTML, spin) {
 }
 $('modalClose').onclick = () => $('modal').classList.add('hidden');
 $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').classList.add('hidden'); });
+$('modalBody').addEventListener('click', e => {
+  const t = e.target.closest('[data-tool]');
+  if (!t || !currentRecipe) return;
+  if (t.dataset.tool === 'leftover') modalLeftover(currentRecipe.name);
+  if (t.dataset.tool === 'simplify') modalSimplify(currentRecipe.name);
+});
 // Esc 关闭所有弹窗
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -1220,36 +1486,103 @@ $('searchResults').addEventListener('click', e => {
 });
 
 /* ---------- LLM 设置 ---------- */
+/* Key 只以脱敏形式出现在页面上；用户不改动时不会覆盖服务端已存的 Key。 */
+const MASK_MARK = '****';
+function isMasked(v) { return String(v || '').includes(MASK_MARK); }
+
 async function loadLlmConfig() {
   try {
     const c = await (await fetch('/api/settings')).json();
     $('llmBaseUrl').value = c.base_url || '';
     $('llmApiKey').value = c.api_key || '';
     $('llmModel').value = c.model || '';
-  } catch (e) {}
+    updateLlmHint(c);
+  } catch (e) { updateLlmHint(null); }
 }
+
+function updateLlmHint(c) {
+  const el = $('llmHint');
+  if (!c || !c.has_api_key) {
+    el.textContent = '未配置 LLM：搭配说明、家常简化版会用模板/不可用，其他功能完全不受影响（规则引擎自带推荐理由）。';
+  } else if (!c.configured) {
+    el.textContent = '已存 API Key，但 Base URL / 模型没填全，还调用不了。';
+  } else {
+    el.textContent = `已配置：${c.base_url} / ${c.model}（Key 已脱敏，页面不显示明文）。`;
+  }
+}
+
 async function saveLlmConfig() {
+  const btn = $('llmSave');
+  btn.disabled = true;
   try {
-    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      base_url: $('llmBaseUrl').value.trim(), api_key: $('llmApiKey').value.trim(), model: $('llmModel').value.trim(),
-    }) });
+    const d = await postJSON('/api/settings', {
+      base_url: $('llmBaseUrl').value.trim(),
+      api_key: $('llmApiKey').value.trim(),
+      model: $('llmModel').value.trim(),
+    });
     $('llmStatus').textContent = '已保存';
     $('llmStatus').style.color = 'var(--accent)';
-  } catch (e) { $('llmStatus').textContent = '保存失败'; $('llmStatus').style.color = 'var(--t1)'; }
+    // 服务端回传的是脱敏配置，用它刷新输入框
+    if (d.config) {
+      $('llmApiKey').value = d.config.api_key || '';
+      updateLlmHint(d.config);
+    }
+  } catch (e) {
+    $('llmStatus').textContent = '保存失败：' + e.message;
+    $('llmStatus').style.color = 'var(--t1)';
+  } finally {
+    btn.disabled = false;
+  }
 }
+
 async function testLlm() {
   $('llmStatus').textContent = '测试中…';
   $('llmStatus').style.color = 'var(--t2)';
+  const btn = $('llmTest');
+  btn.disabled = true;
   try {
-    const r = await (await fetch('/api/llm/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      base_url: $('llmBaseUrl').value.trim(), api_key: $('llmApiKey').value.trim(), model: $('llmModel').value.trim(),
-    }) })).json();
+    const r = await postJSON('/api/llm/test', {
+      base_url: $('llmBaseUrl').value.trim(),
+      api_key: $('llmApiKey').value.trim(),
+      model: $('llmModel').value.trim(),
+    });
     $('llmStatus').textContent = r.ok ? ('✓ ' + r.message) : ('✗ ' + r.message);
     $('llmStatus').style.color = r.ok ? 'var(--accent)' : 'var(--t1)';
-  } catch (e) { $('llmStatus').textContent = '✗ 测试失败'; $('llmStatus').style.color = 'var(--t1)'; }
+  } catch (e) {
+    $('llmStatus').textContent = '✗ ' + e.message;
+    $('llmStatus').style.color = 'var(--t1)';
+  } finally {
+    btn.disabled = false;
+  }
 }
 $('llmSave').onclick = saveLlmConfig;
 $('llmTest').onclick = testLlm;
+
+/* ---------- 味觉画像（反馈沉淀的结果） ---------- */
+async function loadProfile() {
+  try { PROFILE = await (await fetch('/api/profile')).json(); }
+  catch (e) { PROFILE = null; }
+  renderProfile();
+}
+
+function renderProfile() {
+  const el = $('profileBox');
+  if (!el) return;
+  const p = PROFILE || { count: 0 };
+  if (!p.count) {
+    el.innerHTML = '<div class="nutri-note">还没有反馈。生成方案后点菜品右下角的 👍/👎，我会记住你的口味，下次推荐时自动加权。</div>';
+    return;
+  }
+  const list = (arr, cls) => (arr || []).length
+    ? `<div class="chips">${arr.map(x => `<span class="pf-chip ${cls}">${esc(x.name)}${x.score > 1 ? ' ' + x.score : ''}</span>`).join('')}</div>`
+    : '<span class="nutri-note">暂无</span>';
+  el.innerHTML = `
+    <div class="prefs-section"><div class="prefs-title">爱吃的菜</div>${list(p.top_dishes, '')}</div>
+    <div class="prefs-section"><div class="prefs-title">偏好的口味</div>${list(p.top_tastes, '')}</div>
+    <div class="prefs-section"><div class="prefs-title">常出现的食材</div>${list(p.top_ingredients, '')}</div>
+    <div class="prefs-section"><div class="prefs-title">不太喜欢的食材</div>${list(p.avoid_ingredients, 'avoid')}</div>
+    <div class="nutri-note">共 ${p.count} 条反馈（存在本地 data/profile.json，只影响推荐概率，不会突破忌口/过敏等硬约束）。</div>`;
+}
 
 /* ---------- 初始化 ---------- */
 bindCounter('peopleCounter', 1, 20);
@@ -1260,6 +1593,7 @@ loadMeta();
 loadLlmConfig();
 loadPantry();
 loadPrices();
+loadProfile();
 renderFavorites();
 </script>
 </body>

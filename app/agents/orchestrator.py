@@ -17,23 +17,29 @@
 并把"改进方向"（缺蔬菜 / 热量偏高…）作为软约束注入下一轮打分。
 全部节点在无 LLM 时也可用规则跑通（BYOK 友好）。
 """
+import logging
 import random
 from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
 from ..config import get_llm_config
+from ..core.food_db import dish_costs
 from ..core.nutrition import analyze, assess
 from ..core.profile import TasteProfile
 from ..core.shopping import build_shopping_list
 from ..llm.client import LLMClient
 from .planner import (
-    _llm_pairing_note,
-    _template_pairing_note,
+    _pairing_note,
     current_season,
+    dish_reasons,
+    dish_visual,
     get_engine,
 )
 
+logger = logging.getLogger(__name__)
+
+# 营养不达标时最多回退几轮。硬上限，避免"无限重规划 + 无限调 LLM"。
 MAX_ATTEMPTS = 3
 
 
@@ -66,10 +72,10 @@ def planner_node(state: PlanState) -> dict:
 
     trace = list(state.get("trace", []))
     names = "、".join(r.get("name", "") for r in menu) if menu else "（无候选）"
-    trace.append({
-        "agent": "规划师",
-        "note": f"第 {attempt} 轮出菜单：{names}" + (f"（响应营养师：{hint}）" if hint else ""),
-    })
+    note = f"第 {attempt} 轮出菜单：{names}" + (f"（响应营养师：{hint}）" if hint else "")
+    if not menu:
+        note = f"第 {attempt} 轮无候选菜：{info.get('error', '')}"
+    trace.append({"agent": "规划师", "note": note})
     return {"menu": menu, "info": info, "attempt": attempt, "trace": trace, "constraints": constraints}
 
 
@@ -93,8 +99,11 @@ def nutritionist_node(state: PlanState) -> dict:
 
 def shopper_node(state: PlanState) -> dict:
     """采购员：合并采购清单 + 分区。"""
+    menu = state.get("menu", [])
+    if not menu:
+        return {"shopping": None, "trace": list(state.get("trace", []))}
     people = state["constraints"].get("people", 1)
-    shopping = build_shopping_list(state.get("menu", []), people=people)
+    shopping = build_shopping_list(menu, people=people)
     trace = list(state.get("trace", []))
     zones = [z["zone"] for z in shopping.get("zones", [])]
     trace.append({"agent": "采购员", "note": f"生成 {len(zones)} 个分区清单：{'/'.join(zones)}，估算 {shopping.get('est_cost_yuan')} 元"})
@@ -102,23 +111,35 @@ def shopper_node(state: PlanState) -> dict:
 
 
 def writer_node(state: PlanState) -> dict:
-    """搭配师：搭配说明文案（LLM 优先，无 Key 用模板）。"""
+    """搭配师：搭配说明文案（LLM 优先，无 Key / 失败用模板）。"""
     menu = state.get("menu", [])
     constraints = state["constraints"]
     llm = LLMClient(**get_llm_config())
-    note = _llm_pairing_note(menu, constraints, llm) if llm.available else _template_pairing_note(menu, constraints)
+    note, used_llm = _pairing_note(menu, constraints, llm)
 
     trace = list(state.get("trace", []))
-    trace.append({"agent": "搭配师", "note": ("🤖 LLM 生成搭配说明" if llm.available else "📝 模板搭配说明")})
-    return {"pairing_note": note, "llm_available": llm.available, "trace": trace}
+    trace.append({"agent": "搭配师", "note": ("🤖 LLM 生成搭配说明" if used_llm else "📝 模板搭配说明（未用 LLM）")})
+    return {"pairing_note": note, "llm_available": used_llm, "trace": trace}
 
 
 # ---------- 条件路由 ----------
 def route_after_nutrition(state: PlanState) -> str:
-    """营养师不达标且未超最大回退轮次 → 回规划师；否则 → 采购员。"""
+    """nutritionist 之后去哪：回规划师重选 / 去采购员 / 直接结束。
+
+    - 菜单为空：再怎么重规划也没有候选菜，直接 END（否则白跑 3 轮 + 白烧 LLM token）
+    - 营养不达标且未超最大回退轮次：回规划师
+    - 其余：去采购员
+    """
+    if not state.get("menu"):
+        return "end"
     if state.get("nutrition_issues") and state.get("attempt", 0) < MAX_ATTEMPTS:
         return "planner"
     return "shopper"
+
+
+def route_after_shopper(state: PlanState) -> str:
+    """菜单为空时没有采购清单可做，跳过搭配师。"""
+    return "writer" if state.get("menu") else "end"
 
 
 # ---------- 构建并编译图（模块级缓存，只建一次） ----------
@@ -133,9 +154,13 @@ def _build_graph():
     g.add_conditional_edges(
         "nutritionist",
         route_after_nutrition,
-        {"planner": "planner", "shopper": "shopper"},
+        {"planner": "planner", "shopper": "shopper", "end": END},
     )
-    g.add_edge("shopper", "writer")
+    g.add_conditional_edges(
+        "shopper",
+        route_after_shopper,
+        {"writer": "writer", "end": END},
+    )
     g.add_edge("writer", END)
     return g.compile()
 
@@ -172,8 +197,13 @@ def orchestrate(constraints: dict, seed: int = None) -> dict:
 
     menu = result.get("menu", [])
     if not menu:
-        return {"ok": False, "error": "无符合条件的菜", "orchestration": "langgraph",
-                "agent_trace": result.get("trace", [])}
+        return {
+            "ok": False,
+            "error": (result.get("info") or {}).get("error", "无符合条件的菜"),
+            "orchestration": "langgraph",
+            "mode": "langgraph",
+            "agent_trace": result.get("trace", []),
+        }
 
     return {
         "ok": True,
@@ -183,8 +213,12 @@ def orchestrate(constraints: dict, seed: int = None) -> dict:
         "nutrition": result.get("nutrition"),
         "info": result.get("info", {}),
         "llm_used": result.get("llm_available", False),
-        "seed": seed,
+        "seed": seed_val,          # 回传实际使用的种子（原来回的是入参，可能是 None）
+        "mode": "langgraph",
         "orchestration": "langgraph",
-        "replans": result.get("attempt", 1) - 1,
+        "replans": max(0, result.get("attempt", 1) - 1),
         "agent_trace": result.get("trace", []),
+        "reasons": {r.get("id"): dish_reasons(r, constraints) for r in menu},
+        "costs": dish_costs(menu, people=constraints.get("people", 1)),
+        "visuals": {r.get("id"): dish_visual(r) for r in menu},
     }

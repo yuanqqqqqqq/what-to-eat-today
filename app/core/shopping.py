@@ -6,6 +6,8 @@
 import re
 from collections import OrderedDict
 
+from .rules import split_ingredient_names, strip_quantity
+
 # 调料：只列名 + 做菜用量，不显示"要买多少"
 CONDIMENT_KWS = (
     "盐", "糖", "油", "酱油", "生抽", "老抽", "蚝油", "醋", "料酒", "黄酒", "白酒", "米酒",
@@ -39,8 +41,18 @@ SIDE_KWS = (
 # 含"油"但并非油类调料的食材，避免被"油"误判
 NOT_OIL = ("油麦菜", "油豆腐", "油面筋", "油条")
 
-# 纯水 / 误入的工具，不进采购清单
-IGNORE_EXACT = {"水", "清水", "开水", "凉水", "热水", "温水", "冷水", "冰块", "冰水", "饮用水"}
+# 关键词会误判的食材：显式指定分类（先于关键词匹配判断）
+# 玉米含"米"，按关键词会被归成主菜，实际是配菜
+EXPLICIT_ZONE = {
+    "玉米": "配菜", "玉米粒": "配菜", "甜玉米": "配菜", "玉米棒": "配菜",
+    "花生米": "配菜", "虾米": "配菜", "糯米藕": "配菜",
+}
+
+# 纯水 / 误入的工具、小节标题，不进采购清单
+IGNORE_EXACT = {"水", "清水", "开水", "凉水", "热水", "温水", "冷水", "冰块", "冰水", "饮用水",
+                # 源数据里被解析成食材的小节标题，不是要买的东西
+                "小料", "主料", "辅料", "配料", "原料", "调料", "食材", "佐料",
+                "调料表", "配料表", "做法", "步骤", "说明"}
 IGNORE_KWS = ("工具", "擀面杖", "压汁器", "打蛋器", "刷子", "密封袋", "量杯", "厨房秤", "砧板",
               "手套", "厨房纸", "盘子", "盘夹", "夹子", "筷子", "牙签", "定时器", "保鲜膜", "锡纸",
               "油纸", "蒸笼", "杯子", "锅铲", "勺子", "铲子")
@@ -60,6 +72,10 @@ def classify(name: str) -> str:
     for kw in CONDIMENT_KWS:
         if kw in n:
             return "调料"
+    # 显式指定（关键词会误判的少数食材，如"玉米"会命中主菜的"米"）
+    for kw, zone in EXPLICIT_ZONE.items():
+        if kw in n:
+            return zone
     for kw in AROMATIC_KWS:
         if kw in n:
             return "小料"
@@ -88,26 +104,9 @@ def scale_amount(amount, factor):
 
 
 def _load_prices() -> dict:
-    """加载用户食材价格表 -> {食材名: 单价}，用于成本估算。"""
-    import json
-    from ..paths import data_file
-    p = data_file("prices.json")
-    if not p.exists():
-        return {}
-    try:
-        items = json.load(open(p, encoding="utf-8"))
-    except Exception:
-        return {}
-    out = {}
-    for it in items:
-        name = str(it.get("name", "")).strip()
-        price = it.get("price")
-        if name and price not in (None, ""):
-            try:
-                out[name] = float(price)
-            except (TypeError, ValueError):
-                pass
-    return out
+    """用户食材价格表。实现已收敛到 food_db.load_prices（预算校验与展示必须同源）。"""
+    from .food_db import load_prices
+    return load_prices()
 
 
 def build_shopping_list(menu: list, people: int = 1) -> dict:
@@ -119,8 +118,15 @@ def build_shopping_list(menu: list, people: int = 1) -> dict:
     factor = 1 + (max(1, people) - 1) * 0.5
     agg = OrderedDict()
     for r in menu:
+        # 用量表按"清洗后的原食材名"索引，便于和 ingredients 对上
+        amounts = {}
+        for c in r.get("calculations", []):
+            cname = strip_quantity(c.get("name", ""))
+            if cname and c.get("amount") and cname not in amounts:
+                amounts[cname] = c["amount"]
+
         for ing in r.get("ingredients", []):
-            name = ing["name"].strip()
+            name = ing.get("name", "").strip()
             optional = ing.get("optional", False)
             # 剥离旧数据里的"主料：/必备：/可选："前缀
             for p in ("主料：", "必备：", "主料:", "必备:"):
@@ -130,22 +136,23 @@ def build_shopping_list(menu: list, people: int = 1) -> dict:
             if name.startswith(("可选：", "可选:")):
                 name = name[3:].strip()
                 optional = True
-            if not name or _is_ignore(name):
+            if not name:
                 continue
-            key = name
-            if key not in agg:
-                agg[key] = {"name": name, "used_by": [], "amount": "", "optional": optional}
-            else:
-                # 任一菜必备，则整体必备
-                agg[key]["optional"] = agg[key]["optional"] and optional
-            if r["name"] not in agg[key]["used_by"]:
-                agg[key]["used_by"].append(r["name"])
-            # 从计算项里补用量
-            for c in r.get("calculations", []):
-                if c["name"].strip() == name and c.get("amount"):
-                    if not agg[key]["amount"]:
-                        agg[key]["amount"] = c["amount"]
-                    break
+            # 并列写法（"葱、姜"）拆成多条采购项；数量/单位从名字里剥掉
+            for item_name in split_ingredient_names(name):
+                if _is_ignore(item_name):
+                    continue
+                key = item_name
+                if key not in agg:
+                    agg[key] = {"name": item_name, "used_by": [], "amount": "", "optional": optional}
+                else:
+                    # 任一菜必备，则整体必备
+                    agg[key]["optional"] = agg[key]["optional"] and optional
+                if r["name"] not in agg[key]["used_by"]:
+                    agg[key]["used_by"].append(r["name"])
+                # 从计算项里补用量（按清洗后的名字对）
+                if not agg[key]["amount"] and key in amounts:
+                    agg[key]["amount"] = amounts[key]
 
     zones = OrderedDict()
     for item in agg.values():

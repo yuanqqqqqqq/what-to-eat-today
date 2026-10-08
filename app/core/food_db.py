@@ -10,9 +10,8 @@
 """
 import json
 import re
-from pathlib import Path
 
-from .rules import substantive_ingredients
+from .rules import ingredient_variants, substantive_ingredients
 from ..paths import resource
 
 FOOD_FILE = resource("data/food_composition.json")
@@ -126,15 +125,16 @@ class FoodDB:
     def _load(self):
         if FOOD_FILE.exists():
             try:
-                data = json.load(open(FOOD_FILE, encoding="utf-8"))
+                with open(FOOD_FILE, encoding="utf-8") as f:
+                    data = json.load(f)
                 for it in data:
                     name = it.get("name", "").strip()
                     if not name:
                         continue
                     self.foods[name] = it
-                    # 从 ［...］ 提取别名
+                    # 从 ［...］ 提取别名（"白菜薹［菜薹，菜心］" -> 菜薹 / 菜心）
                     for alias in re.findall(r"［([^］]+)］", name):
-                        for a in alias.split("、"):
+                        for a in re.split(r"[、，,]", alias):
                             a = a.strip()
                             if a and a not in self.aliases:
                                 self.aliases[a] = name
@@ -148,10 +148,22 @@ class FoodDB:
             self.aliases[k] = v
 
     def lookup(self, query: str) -> dict:
-        """返回 {name, kcal, protein, fat, carb, fiber} 或 None。"""
+        """返回 {name, kcal, protein, fat, carb, fiber} 或 None。
+
+        菜谱里的食材名常夹带数量与并列（"西兰花 1 个"、"生抽、蚝油、盐"），
+        直接精确匹配会全部落空。这里按候选变体逐个尝试，命中即返回。
+        """
         if not query:
             return None
-        q = query.strip()
+        for variant in ingredient_variants(query):
+            hit = self._lookup_exact(variant)
+            if hit:
+                return hit
+        return None
+
+    def _lookup_exact(self, q: str) -> dict:
+        if not q:
+            return None
         # 1. 手动补充（含别名）
         if q in MANUAL_SUPPLEMENT:
             kcal, p, f, c = MANUAL_SUPPLEMENT[q]
@@ -165,11 +177,14 @@ class FoodDB:
         # 4. 成分表别名
         if q in self.aliases and self.aliases[q] in self.foods:
             return self._norm(self.foods[self.aliases[q]])
+        # 单字查询（"盐""油""糖"）不做模糊匹配，"盐"会被匹到"盐水鸭"
+        if len(q) < 2:
+            return None
         # 5. 前缀匹配（"茄子" -> "茄子（代表值）"）
         for name in self.foods:
             if name.startswith(q + "（") or name.startswith(q + "［"):
                 return self._norm(self.foods[name])
-        # 6. 子串（保守：q 是食物名的前缀词）
+        # 6. 子串（保守：q 是食物名的前缀词，且唯一候选才认）
         cand = [n for n in self.foods if n.startswith(q) and len(n) <= len(q) + 6]
         if len(cand) == 1:
             return self._norm(self.foods[cand[0]])
@@ -197,69 +212,140 @@ class FoodDB:
     _PORTION = {"荤": 300, "素": 300, "汤": 150, "主食": 400,
                 "甜点": 250, "饮品": 400, "半成品": 300, "其他": 250}
 
+    # 水基菜（粥/羹/饮品）：主体是水，按"最密主料 × 400g"算会离谱（一碗糯米粥算成 1400 大卡）
+    _WATERY_KWS = ("粥", "羹", "糊", "浆", "饮", "汁", "茶")
+    _WATERY_PORTION = 200
+
+    # 单菜热量合理区间（kcal）：工程护栏，不是实测值。
+    # "最密主料 × 固定用量"在个别菜上会跑飞，夹在人类一餐能吃完的范围里。
+    _KCAL_RANGE = {
+        "荤": (150, 950), "素": (60, 550), "汤": (40, 350), "主食": (120, 900),
+        "甜点": (80, 600), "饮品": (30, 400), "半成品": (100, 700), "其他": (60, 600),
+    }
+
     # 各类型的主料关键词：只在这些主料里取密度，避免炒饭取到火腿、饺子取到油
     _MAIN_HINTS = {
         "主食": ("饭", "大米", "面", "粉", "饼", "馒头", "饺子", "包", "团", "糕", "芋", "薯", "土豆", "粥", "卷"),
         "荤": ("肉", "排", "鸡", "鸭", "鹅", "鸽", "鱼", "虾", "蟹", "贝", "蛤", "鱿",
                "牛", "羊", "猪", "腊", "火腿", "培根", "蛋", "蹄", "肘", "里脊", "鲈", "鲤", "鳕"),
         "素": ("菜", "瓜", "茄", "豆", "萝卜", "菇", "耳", "笋", "藕", "芹", "韭", "菠",
-               "白菜", "番茄", "西红柿", "豆腐", "土豆", "芋", "莴", "茭", "芦", "花菜", "西兰"),
+               "白菜", "番茄", "西红柿", "豆腐", "土豆", "芋", "莴", "茭", "芦", "花菜", "西兰", "蛋"),
         "甜点": ("糖", "奶", "蛋", "面", "粉", "油", "奶油", "芝士", "巧克力", "蜜", "糯米", "芋", "果"),
         "饮品": ("茶", "奶", "果", "汁", "柠", "咖", "梅", "汽"),
         "汤": ("肉", "鱼", "虾", "鸡", "鸭", "骨", "蛋", "菜", "瓜", "豆", "菇", "豆腐", "海带", "紫菜"),
     }
 
+    # 烹饪用油：炒/煎/炸/爆/烧/煸 类做法加一份油
+    OIL_KCAL = 80
+    OIL_FAT_G = 9.0
+
+    # 无法匹配成分表时，按菜品类型给的经验基准（kcal/100g）
+    _FALLBACK_DENSITY = {"荤": 180, "素": 30, "汤": 45, "主食": 130,
+                         "甜点": 180, "饮品": 25, "半成品": 150, "其他": 60}
+
+    @staticmethod
+    def _recipe_text(recipe: dict) -> str:
+        text = recipe.get("name", "") + " "
+        for g in recipe.get("steps", []):
+            for st in g.get("steps", []):
+                text += st.get("text", "") + " "
+        return text
+
+    @classmethod
+    def _has_cooking_oil(cls, recipe: dict) -> bool:
+        """是否为需要下油的烹调方式（用于补一份油的脂肪/热量）。"""
+        if (recipe.get("dish_type") or "其他") not in ("荤", "素", "主食"):
+            return False
+        return any(k in cls._recipe_text(recipe) for k in ("炒", "煎", "炸", "爆", "烧", "煸"))
+
+    @classmethod
+    def _pick_main(cls, recipe: dict, db: "FoodDB"):
+        """选"主料"作为营养密度来源。
+
+        优先取命中菜品类型主料关键词的食材，否则取成分表里热量最高的一种。
+        返回 (食材名, 成分条目, 估算用量克)；成分表完全没命中时返回 (None, None, 用量)。
+        热量与营养素都走这一条路径，保证"热量高"和"蛋白多"来自同一份数据。
+        """
+        d_type = recipe.get("dish_type") or "其他"
+        portion = cls._PORTION.get(d_type, 250)
+        # 粥/羹/糊/饮品：主体是水，按水基菜用量估
+        if d_type in ("主食", "甜点", "其他", "半成品") and any(
+                k in recipe.get("name", "") for k in cls._WATERY_KWS):
+            portion = cls._WATERY_PORTION
+        names = [i.get("name", "") for i in recipe.get("ingredients", [])]
+        subs = substantive_ingredients(names)
+        hints = cls._MAIN_HINTS.get(d_type, ())
+
+        items = []
+        for s in subs:
+            it = db.lookup(s)
+            if it and it.get("kcal"):
+                items.append((s, it))
+        if not items:
+            return None, None, portion
+        main = [(s, it) for s, it in items if any(h in s for h in hints)]
+        name, it = max(main or items, key=lambda x: x[1]["kcal"] or 0)
+        return name, it, portion
+
     @staticmethod
     def estimate_kcal(recipe: dict) -> int:
         """估算整盘菜热量（kcal）：主料密度 × 估算用量 + 烹饪油。"""
         d_type = recipe.get("dish_type") or "其他"
-        portion = FoodDB._PORTION.get(d_type, 250)
+        _, it, portion = FoodDB._pick_main(recipe, _get_db())
+        # 成分表命中则用其密度，否则退回按菜品类型的经验密度（两者都是 kcal/100g）
+        density = (it["kcal"] or 0) if it else FoodDB._FALLBACK_DENSITY.get(d_type, 60)
+        kcal = density * portion / 100.0
+        if FoodDB._has_cooking_oil(recipe):
+            kcal += FoodDB.OIL_KCAL
+        lo, hi = FoodDB._KCAL_RANGE.get(d_type, (60, 900))
+        return max(lo, min(hi, int(round(kcal))))
 
+    @classmethod
+    def estimate_macros(cls, recipe: dict) -> dict:
+        """估算整盘菜的营养素（克）：蛋白质 / 脂肪 / 碳水 / 膳食纤维。
+
+        与 estimate_kcal 同源（同一份成分表、同一份主料），数据缺位时返回 0 而不是编造。
+        coverage（matched/total）表示原料里有多少能在成分表里查到，供前端标注可信度。
+        """
         db = _get_db()
-        names = [i.get("name", "") for i in recipe.get("ingredients", [])]
-        subs = substantive_ingredients(names)
-        hints = FoodDB._MAIN_HINTS.get(d_type, ())
+        _, it, portion = cls._pick_main(recipe, db)
+        scale = portion / 100.0
 
-        # 优先取命中主料关键词的食材密度，否则取全体最高
-        densities = []
-        for s in subs:
-            it = db.lookup(s)
-            if it and it.get("kcal"):
-                densities.append((s, it["kcal"]))
-        main = [k for s, k in densities if any(h in s for h in hints)]
-        best = max(main) if main else (max((k for _, k in densities), default=0))
+        def gram(key):
+            if not it:
+                return 0.0
+            return float(it.get(key) or 0) * scale
 
-        if not best:
-            best = {"荤": 180, "素": 30, "汤": 45, "主食": 130,
-                    "甜点": 180, "饮品": 25, "半成品": 150, "其他": 60}.get(d_type, 60)
-
-        kcal = best * portion / 100.0
-
-        # 烹饪用油：炒/煎/炸/爆/烧/煸 类做法加一份油（约 80 大卡）
-        steps_text = recipe.get("name", "") + " "
-        for g in recipe.get("steps", []):
-            for st in g.get("steps", []):
-                steps_text += st.get("text", "") + " "
-        if d_type in ("荤", "素", "主食") and any(k in steps_text for k in ("炒", "煎", "炸", "爆", "烧", "煸")):
-            kcal += 80
-
-        return max(60, min(2200, int(round(kcal))))
+        protein, fat, carb, fiber = (gram(k) for k in ("protein", "fat", "carb", "fiber"))
+        if cls._has_cooking_oil(recipe):
+            fat += cls.OIL_FAT_G
+        subs = substantive_ingredients([i.get("name", "") for i in recipe.get("ingredients", [])])
+        matched = sum(1 for s in subs if db.lookup(s))
+        return {
+            "protein_g": round(protein, 1),
+            "fat_g": round(fat, 1),
+            "carb_g": round(carb, 1),
+            "fiber_g": round(fiber, 1),
+            "matched": matched,
+            "total": len(subs),
+        }
 
     # ---------- 价格估算 ----------
     @staticmethod
     def estimate_price(recipe: dict, prices: dict = None) -> float:
-        """估算单道菜成本（元）。有用户价格表时，按食材价格累加。"""
+        """估算单道菜成本（元）。有用户价格表时，按命中的食材价格累加。"""
         if prices:
             names = [i.get("name", "") for i in recipe.get("ingredients", [])]
+            # 同名食材只算一次，避免重复累加
+            hit_names = set()
             total = 0.0
-            hit = 0
             for n in names:
                 for pn, pp in prices.items():
-                    if pn and pp and (pn in n or n in pn):
+                    if pn and pp and (pn in n or n in pn) and pn not in hit_names:
+                        hit_names.add(pn)
                         total += pp
-                        hit += 1
                         break
-            if hit:
+            if hit_names:
                 return max(2.0, round(total, 1))
         d_type = recipe.get("dish_type") or "其他"
         base = {"荤": 22, "素": 6, "汤": 9, "主食": 5,
@@ -296,8 +382,55 @@ def _get_db() -> FoodDB:
     return _DB
 
 
+def load_prices() -> dict:
+    """加载用户食材价格表（data/prices.json）-> {食材名: 单价}。
+
+    成本估算与预算校验必须用同一份价格，否则同一桌菜会算出两个数。
+    """
+    import json
+    from ..paths import data_file
+    p = data_file("prices.json")
+    if not p.exists():
+        return {}
+    try:
+        with open(p, encoding="utf-8") as f:
+            items = json.load(f)
+    except Exception:
+        return {}
+    out = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        name = str(it.get("name", "")).strip()
+        price = it.get("price")
+        if name and price not in (None, ""):
+            try:
+                out[name] = float(price)
+            except (TypeError, ValueError):
+                pass
+    return out
+
+
 def estimate_meal_cost(menu: list, people: int = 1, prices: dict = None) -> float:
-    """一桌菜的总成本：Σ 单菜成本 × 人数系数（人数增加时菜量加大，成本边际递减）。"""
+    """一桌菜的总成本：Σ 单菜成本 × 人数系数（人数增加时菜量加大，成本边际递减）。
+
+    prices 省略时自动读取用户价格表 —— 调用方不要各自传不同的价格。
+    """
+    if prices is None:
+        prices = load_prices()
     factor = 1 + (max(1, people) - 1) * 0.35
     total = sum(FoodDB.estimate_price(r, prices) for r in menu)
     return round(total * factor, 1)
+
+
+def dish_costs(menu: list, prices: dict = None, people: int = 1) -> dict:
+    """返回 {菜谱 id: 单菜估算成本（元）}，供前端在菜品卡上展示。
+
+    按当前人数的份量系数缩放，保证各菜品卡上的成本加起来 ≈ 整桌估算成本
+    （否则用户会看到 22+2+6=30，而合计写 51 元）。
+    """
+    if prices is None:
+        prices = load_prices()
+    factor = 1 + (max(1, int(people or 1)) - 1) * 0.35
+    return {r.get("id"): round(FoodDB.estimate_price(r, prices) * factor, 1)
+            for r in menu if r.get("id")}

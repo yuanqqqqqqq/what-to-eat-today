@@ -5,7 +5,18 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data   # 持久化菜谱与用户设置
+      - ./data:/app/data   # 持久化菜谱与用户数据（设置/画像/价格）
     env_file:
-      - .env               # 可选：不提供 .env 也可在前端面板填写 Key
+      # .env 是可选的：没有这个文件也能起来，启动后在前端面板填 Key 即可
+      - path: .env
+        required: false
+    environment:
+      # 用户数据写进挂载卷，容器重建不丢
+      APP_DATA_DIR: /app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped

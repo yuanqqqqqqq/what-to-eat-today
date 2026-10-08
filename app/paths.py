@@ -4,7 +4,10 @@
 PyInstaller 打包后：
 - 只读资源（frontend、内置菜谱/成分表）在 sys._MEIPASS（临时解压目录）。
 - 可写数据（用户菜谱/价格/常备/设置/画像）在 exe 旁边的 data/ 目录。
+
+环境变量 APP_DATA_DIR 可覆盖可写数据目录（测试隔离、或想把数据放到别处）。
 """
+import os
 import sys
 from pathlib import Path
 
@@ -24,7 +27,13 @@ def resource_dir() -> Path:
 
 def data_dir() -> Path:
     """可写数据目录。打包后放在 exe 旁边，保证可写。"""
-    d = (Path(sys.executable).parent if is_frozen() else _PROJECT_ROOT) / "data"
+    override = os.getenv("APP_DATA_DIR", "").strip()
+    if override:
+        d = Path(override)
+    elif is_frozen():
+        d = Path(sys.executable).parent / "data"
+    else:
+        d = _PROJECT_ROOT / "data"
     d.mkdir(parents=True, exist_ok=True)
     return d
 

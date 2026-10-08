@@ -1,0 +1,28 @@
+# 构建上下文瘦身：这些都不进镜像
+.git
+.gitignore
+.claude
+.pi
+docs
+tests
+pytest.ini
+requirements-dev.txt
+.env
+.env.*
+*.md
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+*.log
+
+# 原始语料与本地用户数据（用户菜谱/画像/价格/设置）
+data/raw/
+data/enrich.log
+data/server.log
+data/profile.json
+data/settings.json
+data/user_recipes.json
+data/pantry.json
+data/prices.json
